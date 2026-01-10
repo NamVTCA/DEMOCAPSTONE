@@ -2,7 +2,8 @@ import { Search, MapPin, Calendar, ArrowRightLeft, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from './LanguageContext';
 import { HeroLocationSlider } from './HeroLocationSlider';
-import { CustomDatePicker } from './CustomDatePicker'; // 1. Import Component mới
+// 1. IMPORT COMPONENT MỚI
+import { CustomDatePicker } from './CustomDatePicker';
 
 interface HeroSearchProps {
   onSearch?: (from: string, to: string, date: string) => void;
@@ -20,12 +21,12 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
   const fromInputRef = useRef<HTMLInputElement>(null);
   const toInputRef = useRef<HTMLInputElement>(null);
 
-  // ... (Giữ nguyên các useEffect và danh sách cities cũ) ...
   useEffect(() => {
     setFrom(initialFrom);
     setTo(initialTo);
   }, [initialFrom, initialTo]);
 
+  // Listen for searchRoute event from HeroLocationSlider
   useEffect(() => {
     const handleSearchRoute = (event: CustomEvent) => {
       const { departure, destination, date: eventDate } = event.detail;
@@ -33,6 +34,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
       setTo(destination);
       setDate(eventDate);
       
+      // Trigger search automatically
       if (onSearch) {
         onSearch(departure, destination, eventDate);
       }
@@ -44,6 +46,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
     };
   }, [onSearch]);
 
+  // Danh sách địa điểm phổ biến với cả VI và EN
   const cities = [
     { vi: 'TP. Hồ Chí Minh', en: 'Ho Chi Minh City', code: 'hcm' },
     { vi: 'Hà Nội', en: 'Hanoi', code: 'hn' },
@@ -62,6 +65,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
     { vi: 'Mũi Né', en: 'Mui Ne', code: 'mn' }
   ];
 
+  // Get display name theo ngôn ngữ
   const getCityName = (city: typeof cities[0]) => {
     return language === 'vi' ? city.vi : city.en;
   };
@@ -98,11 +102,12 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
     return cityName.toLowerCase().includes(searchLower) && cityName !== from;
   });
 
+  // Set today as min date
   const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="relative bg-gradient-to-br from-blue-600 via-blue-500 to-teal-500 dark:from-blue-900 dark:via-blue-800 dark:to-teal-800 py-24 transition-colors duration-300 overflow-hidden">
-      {/* ... (Phần Background Animation giữ nguyên) ... */}
+      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-300/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -114,7 +119,6 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4">
-        {/* ... (Phần Title giữ nguyên) ... */}
         <div className="text-center mb-12 animate-fade-in">
           <h1 className="text-5xl text-white mb-4 drop-shadow-lg">
             {t('heroTitle')}
@@ -124,14 +128,12 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
           </p>
         </div>
 
-        {/* Search Card */}
+        {/* Search Card with glassmorphism */}
         <div className="max-w-5xl mx-auto animate-bounce-in">
           <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 hover:shadow-blue-500/20 transition-all duration-300 animate-pulse-glow">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              
-              {/* From Input (Giữ nguyên) */}
+              {/* From */}
               <div className="relative md:col-span-4">
-                {/* ... (Code phần From Input giữ nguyên) ... */}
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
                   {t('departure')}
                 </label>
@@ -179,7 +181,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
                 )}
               </div>
 
-              {/* Swap Button (Giữ nguyên) */}
+              {/* Swap Button */}
               <div className="md:col-span-1 flex items-end justify-center pb-0 md:pb-3">
                 <button
                   onClick={handleSwap}
@@ -190,9 +192,8 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
                 </button>
               </div>
 
-              {/* To Input (Giữ nguyên) */}
+              {/* To */}
               <div className="relative md:col-span-4">
-                {/* ... (Code phần To Input giữ nguyên) ... */}
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
                   {t('destination')}
                 </label>
@@ -239,7 +240,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
                 )}
               </div>
 
-              {/* 2. SỬA Ở ĐÂY: Date Picker dùng CustomDatePicker */}
+              {/* 2. SỬA DATE PICKER TẠI ĐÂY */}
               <div className="md:col-span-3">
                  <CustomDatePicker 
                     label={t('date')}
@@ -251,7 +252,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
 
             </div>
 
-            {/* Search Button (Giữ nguyên) */}
+            {/* Search Button */}
             <button
               onClick={handleSearch}
               className="w-full mt-6 py-4 bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-2xl hover:shadow-blue-500/30 group"
@@ -262,7 +263,7 @@ export function HeroSearch({ onSearch, initialFrom = '', initialTo = '' }: HeroS
           </div>
         </div>
 
-        {/* Location Slider (Giữ nguyên) */}
+        {/* Location Slider */}
         <div className="mt-12">
           <HeroLocationSlider />
         </div>

@@ -7,14 +7,13 @@ import { DriverApp } from "./app/components/driver/DriverApp";
 import { AdminApp } from "./app/components/admin/AdminApp";
 import { AppRouter } from "./app/components/AppRouter";
 import { useState } from "react";
-import { Car, Building2, Settings, X, Smartphone } from "lucide-react";
+import { Car, Building2, Settings, X } from "lucide-react";
 
 type AppMode =
   | "customer"
   | "driver"
   | "company-admin"
   | "system-admin"
-  | "mobile-preview";
 
 function PortalButtons({
   showPortalButtons,

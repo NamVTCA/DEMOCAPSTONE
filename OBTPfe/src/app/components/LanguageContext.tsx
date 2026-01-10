@@ -1,13 +1,16 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 type Language = 'vi' | 'en';
+
+// Định nghĩa kiểu dữ liệu cho object translations dựa trên tiếng Việt
+type TranslationKeys = keyof typeof translations.vi;
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
-  t: (key: string) => string;
+  t: (key: TranslationKeys | string) => string;
 }
 
 const translations = {
@@ -23,7 +26,7 @@ const translations = {
     account: 'Tài khoản',
     myTrips: 'Chuyến xe của tôi',
     profile: 'Thông tin cá nhân',
-    
+
     // Hero
     heroTitle: 'Đặt Vé Xe Khách Trực Tuyến',
     heroSubtitle: 'Nhanh chóng - An toàn - Tiện lợi',
@@ -33,13 +36,13 @@ const translations = {
     search: 'Tìm kiếm',
     selectDeparture: 'Chọn điểm đi',
     selectDestination: 'Chọn điểm đến',
-    
+
     // Popular Routes
     popularRoutes: 'Tuyến Đường Phổ Biến',
     popularDestinations: 'Điểm đến phổ biến',
     tripsPerDay: 'chuyến/ngày',
     from: 'Từ',
-    
+
     // Features
     features: 'Tại Sao Chọn Chúng Tôi',
     feature1Title: 'Đặt Vé Nhanh',
@@ -63,14 +66,14 @@ const translations = {
     qualityAssuredDesc: 'Đối tác nhà xe uy tín với tiêu chuẩn phục vụ cao',
     multiplePayments: 'Thanh toán đa dạng',
     multiplePaymentsDesc: 'Hỗ trợ nhiều hình thức thanh toán tiện lợi và an toàn',
-    
+
     // Promo Banner
     limitedOffer: 'Ưu đãi có thời hạn',
     specialOfferTitle: 'Ưu Đãi Đặc Biệt - Giảm 20% Cho Đơn Hàng Đầu Tiên!',
     useCode: 'Sử dụng mã',
     whenCheckout: 'khi thanh toán. Chỉ áp dụng cho khách hàng mới.',
     bookNowAndSave: 'Đặt vé ngay & Tiết kiệm',
-    
+
     // Footer
     platformDescription: 'Nền tảng đặt vé xe khách trực tuyến hàng đầu Việt Nam',
     aboutUs: 'Về chúng tôi',
@@ -82,7 +85,7 @@ const translations = {
     bookingGuide: 'Hướng dẫn đặt vé',
     refundPolicy: 'Chính sách hoàn vé',
     feedbackAndComplaint: 'Góp ý - Khiếu nại',
-    contactInformation: 'Thông tin liên hệ',
+    contactInfo: 'Thông tin liên hệ',
     addressLabel: 'Địa chỉ',
     addressValue: '123 Đường ABC, Quận 1, TP. Hồ Chí Minh',
     phoneLabel: 'Điện thoại',
@@ -90,7 +93,7 @@ const translations = {
     mapLocation: 'Bản đồ vị trí',
     sendMessage: 'Gửi tin nhắn',
     allRightsReserved: 'All rights reserved',
-    
+
     // Contact
     contactTitle: 'Liên Hệ Với Chúng Tôi',
     contactSubtitle: 'Chúng tôi luôn sẵn sàng hỗ trợ bạn',
@@ -99,11 +102,11 @@ const translations = {
     phone: 'Số điện thoại',
     message: 'Tin nhắn',
     send: 'Gửi tin nhắn',
-    
+
     // Routes Page
     allRoutes: 'Tất Cả Tuyến Đường',
     routesSubtitle: 'Khám phá các tuyến đường phổ biến',
-    
+
     // Search Results
     searchResults: 'Kết quả tìm kiếm',
     foundTrips: 'Tìm thấy',
@@ -118,7 +121,7 @@ const translations = {
     amenityDrink: 'Nước uống',
     amenityAC: 'Điều hòa',
     amenityTV: 'TV',
-    
+
     // Hotline
     hotlineTitle: 'Hotline Hỗ Trợ 24/7',
     hotlineSubtitle: 'Chúng tôi luôn sẵn sàng hỗ trợ bạn mọi lúc',
@@ -126,7 +129,7 @@ const translations = {
     bookingSupport: 'Hỗ trợ đặt vé',
     technicalSupport: 'Hỗ trợ kỹ thuật',
     complaint: 'Khiếu nại & Góp ý',
-    
+
     // Ticket Lookup
     ticketLookupTitle: 'Tra Cứu Vé',
     ticketLookupHeader: 'Tra Cứu Thông Tin Vé',
@@ -141,7 +144,7 @@ const translations = {
     route: 'Tuyến đường',
     time: 'Thời gian',
     passenger: 'Hành khách',
-    seatAndPrice: 'Số gh & Giá vé',
+    seatAndPrice: 'Số ghế & Giá vé',
     seat: 'Ghế',
     seatNumber: 'Số ghế',
     busCompany: 'Nhà xe',
@@ -151,7 +154,7 @@ const translations = {
     cancelTicket: 'Hủy vé',
     sleeper: 'Giường nằm',
     seating: 'Ghế ngồi',
-    
+
     // My Trips
     myTripsTitle: 'Chuyến Xe Của Tôi',
     allTrips: 'Tất cả',
@@ -169,11 +172,11 @@ const translations = {
     upcomingStatus: 'Sắp đi',
     completedStatus: 'Đã đi',
     cancelledStatus: 'Đã hủy',
-    
+
     // Messages
     selectBothLocations: 'Vui lòng chọn điểm đi và điểm đến',
     messageSent: 'Tin nhắn đã được gửi thành công! Chúng tôi sẽ phản hồi sớm.',
-    
+
     // Settings Page
     settings: 'Cài Đặt',
     settingsSubtitle: 'Quản lý cài đặt hệ thống nhà xe',
@@ -183,7 +186,7 @@ const translations = {
     security: 'Bảo mật',
     payment: 'Thanh toán',
     backup: 'Sao lưu',
-    
+
     // General Settings
     generalSettings: 'Cài Đặt Tổng Quan',
     generalSettingsDesc: 'Cấu hình chung cho hệ thống',
@@ -196,7 +199,7 @@ const translations = {
     businessHoursDesc: 'Cấu hình giờ làm việc',
     weekdays: 'Thứ 2 - Thứ 6',
     weekend: 'Thứ 7 - Chủ nhật',
-    
+
     // Company Settings
     companySettings: 'Thông Tin Công Ty',
     companySettingsDesc: 'Cập nhật thông tin nhà xe',
@@ -206,7 +209,7 @@ const translations = {
     website: 'Website',
     companyLogo: 'Logo công ty',
     uploadLogo: 'Tải lên logo',
-    
+
     // Pricing Settings
     pricingSettings: 'Cài Đặt Giá Cước',
     pricingSettingsDesc: 'Quản lý chính sách giá vé',
@@ -216,7 +219,7 @@ const translations = {
     lateCancellationHours: 'Thời gian hủy muộn (giờ)',
     childDiscount: 'Giảm giá trẻ em (%)',
     studentDiscount: 'Giảm giá sinh viên (%)',
-    
+
     // Notification Settings
     notificationSettings: 'Cài Đặt Thông Báo',
     notificationSettingsDesc: 'Quản lý thông báo của hệ thống',
@@ -233,7 +236,7 @@ const translations = {
     cancellationEmailDesc: 'Thông báo hủy vé cho khách hàng',
     reminderEmail: 'Email nhắc nhở chuyến đi',
     reminderEmailDesc: 'Nhắc khách 24h trước giờ khởi hành',
-    
+
     // Security Settings
     securitySettings: 'Bảo Mật',
     securitySettingsDesc: 'Cài đặt bảo mật tài khoản và hệ thống',
@@ -248,7 +251,7 @@ const translations = {
     securityPolicies: 'Chính Sách Bảo Mật',
     sessionTimeout: 'Thời gian hết phiên (phút)',
     maxLoginAttempts: 'Số lần đăng nhập sai tối đa',
-    
+
     // Payment Settings
     paymentGateway: 'Cổng Thanh Toán',
     paymentGatewayDesc: 'Quản lý phương thức thanh toán',
@@ -262,7 +265,7 @@ const translations = {
     bankTransferDesc: 'Thanh toán qua chuyển khoản',
     cash: 'Tiền mặt',
     cashDesc: 'Thanh toán trực tiếp',
-    
+
     // Backup Settings
     backupSettings: 'Sao Lưu Dữ Liệu',
     backupSettingsDesc: 'Quản lý sao lưu tự động và phục hồi',
@@ -276,7 +279,7 @@ const translations = {
     daily: 'Hàng ngày',
     weekly: 'Hàng tuần',
     monthly: 'Hàng tháng',
-    
+
     // Common
     save: 'Lưu',
     saveChanges: 'Lưu thay đổi',
@@ -295,7 +298,7 @@ const translations = {
     error: 'Lỗi',
     warning: 'Cảnh báo',
     info: 'Thông tin',
-    
+
     // Admin Dashboard
     dashboard: 'Bảng điều khiển',
     statistics: 'Thống kê',
@@ -305,8 +308,8 @@ const translations = {
     revenue: 'Doanh thu',
     customers: 'Khách hàng',
     bookings: 'Đặt vé',
-    
-    // Admin Menu Items
+
+    // Admin Menu Items & System Admin
     companyAdmin: 'Company',
     systemAdmin: 'Admin',
     vehicleManagement: 'Quản lý xe',
@@ -318,6 +321,8 @@ const translations = {
     userManagement: 'Người dùng',
     reviewManagement: 'Đánh giá',
     dataManagement: 'Dữ liệu',
+    promoCodeManagement: 'Mã khuyến mãi',
+    routeImagesManagement: 'Ảnh tuyến đường',
     underDevelopment: 'Đang phát triển',
     pageUnderConstruction: 'đang được xây dựng',
     lightTheme: 'Sáng',
@@ -325,8 +330,8 @@ const translations = {
     switchToLight: 'Chuyển sang sáng',
     switchToDark: 'Chuyển sang tối',
     switchToEnglish: 'Switch to English',
-    switchToVietnamese: 'Chuyển sang Tiếng Vit',
-    
+    switchToVietnamese: 'Chuyển sang Tiếng Việt',
+
     // Driver Portal
     driverPortal: 'Cổng Tài Xế',
     mySchedule: 'Lịch Trình Của Tôi',
@@ -336,7 +341,7 @@ const translations = {
     passengers: 'Hành khách',
     checkIn: 'Check-in',
     scanQR: 'Quét mã QR',
-    driverInformation: 'Thông Tin Tài Xế',
+    driverInfo: 'Thông Tin Tài Xế',
     licenseNumber: 'Số bằng lái xe',
     idCard: 'Số CCCD',
     achievements: 'Thành Tích & Đánh Giá',
@@ -344,7 +349,7 @@ const translations = {
     totalTrips: 'Tổng số chuyến',
     onTimeRate: 'Tỷ lệ đúng giờ',
     safetyScore: 'Điểm an toàn',
-    
+
     // Driver Home
     navigation: 'Dẫn đường',
     earnings: 'Doanh thu',
@@ -360,7 +365,7 @@ const translations = {
     searchTrips: 'Tìm chuyến đi...',
     distance: 'Khoảng cách',
     boarded: 'Đã lên',
-    
+
     // Notifications
     notificationsTitle: 'Thông báo',
     viewAll: 'Xem tất cả',
@@ -370,11 +375,11 @@ const translations = {
     minutesAgo: 'phút trước',
     hourAgo: 'giờ trước',
     hoursAgo: 'giờ trước',
-    
+
     // Trip Details
     vehiclePlate: 'Biển số xe',
     noTrips: 'Không có chuyến đi nào',
-    
+
     // Promo Codes
     promoCodes: 'Mã giảm giá',
     promoCode: 'Mã giảm giá',
@@ -388,10 +393,9 @@ const translations = {
     applicableRoutes: 'Áp dụng cho tuyến',
     minAmount: 'Số tiền tối thiểu',
     maxDiscount: 'Giảm tối đa',
-    // useCode: 'Sử dụng mã',
     availablePromoCodes: 'Mã giảm giá có sẵn',
     selectAndApply: 'Chọn và áp dụng mã phù hợp',
-    
+
     // Seat Selection
     selectSeat: 'Chọn ghế',
     seatMap: 'Sơ đồ ghế',
@@ -401,7 +405,7 @@ const translations = {
     selected: 'Đang chọn',
     booked: 'Đã đặt',
     holding: 'Đang giữ',
-    
+
     // Vehicle Types
     vehicleType: 'Loại xe',
     sleeperBus: 'Giường nằm',
@@ -411,7 +415,7 @@ const translations = {
     beds: 'giường',
     seats: 'ghế',
     vehicleDetails: 'Chi tiết xe',
-    
+
     // Forgot Password
     forgotPassword: 'Quên mật khẩu',
     resetPassword: 'Đặt lại mật khẩu',
@@ -435,11 +439,10 @@ const translations = {
     noteLabel: 'Lưu ý:',
     checkSpamFolder: 'Kiểm tra cả thư mục spam nếu không thấy email trong hộp thư chính.',
     resetLinkNote: 'Chúng tôi sẽ gửi liên kết đặt lại mật khẩu đến email này',
-    
+
     // Dashboard Company
     companyDashboard: 'Dashboard Nhà Xe',
     totalVehicles: 'Tổng số xe',
-    // todayTrips: 'Chuyến hôm nay',
     totalPassengers: 'Tổng hành khách',
     monthlyRevenue: 'Doanh thu tháng',
     revenue7Days: 'Doanh Thu 7 Ngày Gần Nhất',
@@ -448,7 +451,7 @@ const translations = {
     days7: '7 ngày',
     days30: '30 ngày',
     bookedSeats: 'Đã đặt',
-    
+
     // System Dashboard
     systemDashboard: 'Dashboard Hệ Thống',
     totalCompanies: 'Tổng số nhà xe',
@@ -462,7 +465,7 @@ const translations = {
     newDriverApplication: 'Đơn tài xế mới',
     bookingCompleted: 'Hoàn thành đặt vé',
     systemAlert: 'Cảnh báo hệ thống',
-    
+
     // Vehicle Management
     vehicleList: 'Danh Sách Xe',
     addNewVehicle: 'Thêm Xe Mới',
@@ -470,7 +473,7 @@ const translations = {
     licensePlate: 'Biển số xe',
     model: 'Mẫu xe',
     manufacturer: 'Hãng sản xuất',
-    yearOfManufacture: 'Năm sản xuất',
+    year: 'Năm sản xuất',
     capacity: 'Số chỗ',
     status: 'Trạng thái',
     active: 'Hoạt động',
@@ -506,10 +509,10 @@ const translations = {
     vipSleeperBus: 'Giường nằm VIP',
     seatBusOption: 'Ghế ngồi',
     limousineOption: 'Limousine',
-    // seatNumber: 'Số ghế',
-    // yearOfManufacture: 'Năm sản xuất',
+    seatNumber: 'Số ghế',
+    yearOfManufacture: 'Năm sản xuất',
     manufacturerBrand: 'Hãng xe',
-    
+
     // Driver Management
     driverManagementTitle: 'Quản Lý Tài Xế',
     driverManagementDesc: 'Quản lý đội ngũ tài xế',
@@ -518,7 +521,7 @@ const translations = {
     availableDrivers: 'Sẵn sàng',
     busyDrivers: 'Đang bận',
     averageRating: 'Đánh giá TB',
-    searchName: 'Tìm kiếm theo tên, SĐT, GPLX...',
+    searchDriver: 'Tìm kiếm theo tên, SĐT, GPLX...',
     allStatus: 'Tất cả trạng thái',
     availableStatus: 'Sẵn sàng',
     busyStatus: 'Đang bận',
@@ -529,10 +532,10 @@ const translations = {
     assignedVehicleColumn: 'Xe phụ trách',
     ratingColumn: 'Đánh giá',
     tripsColumn: 'Chuyến đi',
-    joinedDate: 'Ngày tham gia',
+    joinedDate: 'Tham gia',
     addNewDriverTitle: 'Thêm Tài Xế Mới',
     licenseNumberLabel: 'Số GPLX',
-    
+
     // Route Management
     routeManagementTitle: 'Quản Lý Chuyến Đi',
     routeManagementDesc: 'Quản lý lịch trình và chuyến đi',
@@ -543,6 +546,8 @@ const translations = {
     searchRoute: 'Tìm kiếm theo tuyến đường, biển số...',
     scheduledStatus: 'Đã lên lịch',
     runningStatus: 'Đang chạy',
+    completedStatus: 'Hoàn thành',
+    cancelledStatus: 'Đã hủy',
     routeColumn: 'Tuyến đường',
     timeColumn: 'Thời gian',
     dateColumn: 'Ngày',
@@ -550,7 +555,7 @@ const translations = {
     seatsColumn: 'Số ghế',
     assignDriver: 'Phân công tài xế',
     driverAssigned: 'Đã phân công tài xế thành công!',
-    
+
     // Booking Management
     bookingManagementTitle: 'Quản Lý Đặt Vé',
     bookingManagementDesc: 'Xem và quản lý các vé đã đặt',
@@ -568,12 +573,12 @@ const translations = {
     tripInformation: 'Thông Tin Chuyến Đi',
     passengerInformation: 'Thông Tin Hành Khách',
     exportBookings: 'Xuất danh sách',
-    
+
     // Additional Route Management
     selectVehicle: 'Chọn xe',
     createTrip: 'Tạo chuyến đi',
     ticketPrice: 'Giá vé',
-    
+
     // Driver Applications
     driverApplicationsTitle: 'Đơn Đăng Ký Tài Xế',
     driverApplicationsDesc: 'Quản lý và phê duyệt đơn đăng ký tài xế mới',
@@ -584,11 +589,12 @@ const translations = {
     rejectedApplications: 'Từ chối',
     searchApplications: 'Tìm kiếm theo tên, SĐT, email...',
     allApplications: 'Tất cả',
-    driverInfo: 'Tài xế',
-    contactInfo: 'Liên hệ',
+    // driverInfo: 'Tài xế', // Duplicate
+    // contactInfo: 'Liên hệ', // Duplicate
     licenseInfo: 'Bằng lái',
     submittedDate: 'Ngày nộp',
     actions: 'Thao tác',
+    // viewDetails: 'Xem chi tiết', // Duplicate
     approve: 'Phê duyệt',
     reject: 'Từ chối',
     noApplicationsFound: 'Không tìm thấy đơn đăng ký nào',
@@ -607,18 +613,18 @@ const translations = {
     pendingStatus: 'Chờ duyệt',
     approvedStatus: 'Đã duyệt',
     rejectedStatus: 'Từ chối',
-    
+
     // FAQ Page
     faqTitle: 'Câu Hỏi Thường Gặp',
     faqSubtitle: 'Tìm câu trả lời cho các thắc mắc của bạn',
     searchFAQ: 'Tìm kiếm câu hỏi...',
     allCategories: 'Tất cả',
-    bookingCategory: 'Danh mục Đặt Vé',
-    paymentCategory: 'Danh mục thanh toán',
+    bookingCategory: 'Đặt vé',
+    paymentCategory: 'Thanh toán',
     tripCategory: 'Chuyến đi',
     supportCategory: 'Hỗ trợ',
     backToHome: 'Về trang chủ',
-    
+
     // FAQ Questions & Answers
     faq1Q: 'Làm thế nào để đặt vé xe trên VeXe.com?',
     faq1A: 'Rất đơn giản! Bạn chỉ cần: (1) Chọn điểm đi, điểm đến và ngày đi trên trang chủ. (2) Xem danh sách các chuyến xe và chọn chuyến phù hợp. (3) Chọn ghế ngồi yêu thích. (4) Điền thông tin hành khách và thanh toán. (5) Nhận vé điện tử qua email và SMS.',
@@ -644,7 +650,7 @@ const translations = {
     faq11A: 'Đừng lo! Bạn có thể: (1) Kiểm tra email đã dùng để đặt vé. (2) Vào mục "Tra cứu vé" trên website và nhập số điện thoại. (3) Liên hệ hotline 1900 6067 để được hỗ trợ tra cứu.',
     faq12Q: 'VeXe.com có ứng dụng di động không?',
     faq12A: 'Có! Bạn có thể tải ứng dụng VeXe.com trên App Store (iOS) và Google Play (Android). Ứng dụng có giao diện thân thiện, dễ sử dụng và nhận nhiều ưu đãi độc quyền.',
-    
+
     // Auth Pages
     driverPortalTitle: 'Cổng Tài Xế',
     driverLoginSubtitle: 'Đăng nhập để bắt đầu làm việc',
@@ -652,6 +658,8 @@ const translations = {
     companyLoginSubtitle: 'Đăng nhập để quản lý nhà xe',
     systemAdminTitle: 'Quản Trị Hệ Thống',
     systemLoginSubtitle: 'Đăng nhập với quyền quản trị viên',
+    mobilePreviewTitle: 'Xem Giao Diện Mobile',
+    previewApp: 'Preview ứng dụng di động',
     managementPortal: 'Cổng quản lý',
     manageTrips: 'Quản lý chuyến đi',
     manageBusiness: 'Điều hành doanh nghiệp',
@@ -670,7 +678,7 @@ const translations = {
     demoInstructions: 'Nhập bất kỳ tên và mật khẩu để đăng nhập',
     demoExample: 'Ví dụ:',
     pleaseEnterAllInfo: 'Vui lòng nhập đầy đủ thông tin!',
-    
+
     // Driver Registration
     driverRegistrationTitle: 'Đăng Ký Tài Xế',
     driverRegistrationSubtitle: 'Gia nhập đội ngũ tài xế chuyên nghiệp của chúng tôi',
@@ -684,10 +692,10 @@ const translations = {
     accountInfoSection: 'Thông tin tài khoản',
     fullNameLabel: 'Họ và tên',
     fullNamePlaceholder: 'Nguyễn Văn A',
-    // phoneLabel: 'Số điện thoại',
+    phoneLabel: 'Số điện thoại',
     phonePlaceholder: '0123456789',
-    // emailPlaceholder: 'email@example.com',
-    // addressLabel: 'Địa chỉ',
+    emailPlaceholder: 'email@example.com',
+    addressLabel: 'Địa chỉ',
     addressPlaceholder: '123 Đường ABC, Quận 1, TP.HCM',
     licenseNumberField: 'Số bằng lái xe',
     licenseNumberPlaceholder: '123456789',
@@ -714,16 +722,16 @@ const translations = {
     passwordTooShort: 'Mật khẩu phải có ít nhất 6 ký tự!',
     registrationSuccessMessage: 'Đăng ký thành công! Đơn đăng ký của bạn đang chờ phê duyệt. Chúng tôi sẽ liên hệ với bạn trong vòng 24-48h.',
     required: '*',
-    
+
     // Driver Profile & Settings
     profileAndSettings: 'Hồ Sơ & Cài Đặt',
     personalInfo: 'Thông tin cá nhân',
-    // tripHistory: 'Lịch sử chuyến đi',
+    // tripHistory: 'Lịch sử chuyến đi', // Duplicate
     changePasswordOption: 'Đổi mật khẩu',
     achievementsAndRatings: 'Thành tích & Đánh giá',
     employeeCode: 'Mã NV',
     excellentDriver: 'Tài xế xuất sắc',
-    tripsCountValue: 'Chuyến đi',
+    // tripsCount: 'Chuyến đi', // Duplicate
     rating: 'Đánh giá',
     onTime: 'Đúng giờ',
     thisMonthStats: 'Thống Kê Tháng Này',
@@ -732,24 +740,25 @@ const translations = {
     comparedToLastMonth: 'so với tháng trước',
     loginSubtitle: 'Đăng nhập',
     register: 'Đăng ký',
-    registerSubtitle: 'Tạo tài khoản mới',
     haveAccount: 'Đã có tài khoản?',
     loginNow: 'Đăng nhập ngay',
     emailField: 'Email',
     confirmPassword: 'Xác nhận mật khẩu',
     enterConfirmPassword: 'Nhập lại mật khẩu',
-    
+
     // Driver Profile Detail
     backToProfile: 'Quay lại',
     editProfile: 'Chỉnh sửa',
     saveProfile: 'Lưu',
     cancelEdit: 'Hủy',
+    // personalInfoSection: 'Thông Tin Cá Nhân', // Duplicate
     licenseInfoSection: 'Thông Tin Bằng Lái',
+    // fullNameLabel: 'Họ và tên', // Duplicate
     dateOfBirth: 'Ngày sinh',
     phoneNumberLabel: 'Số điện thoại',
     emailAddress: 'Email',
     idCardNumber: 'Số CCCD',
-    // joinedDate: 'Ngày vào làm',
+    // joinedDate: 'Ngày vào làm', // Duplicate
     addressInfo: 'Địa chỉ',
     licenseNumberInfo: 'Số bằng lái',
     licenseExpiry: 'Ngày hết hạn',
@@ -758,9 +767,9 @@ const translations = {
     backSide: 'Mặt sau',
     employeeCodeLabel: 'Mã nhân viên',
     professionalDriver: 'Tài xế chuyên nghiệp',
-    
+
     // Trip History
-    tripHistoryTitle: 'Tiêu đề lịch sử chuyến đi',
+    tripHistoryTitle: 'Lịch Sử Chuyến Đi',
     tripHistorySubtitle: 'Xem lại các chuyến đi đã hoàn thành',
     thisWeek: 'Tuần này',
     thisMonth: 'Tháng này',
@@ -780,7 +789,7 @@ const translations = {
     month: 'tháng',
     year: 'năm',
     withRating: 'này với đánh giá trung bình',
-    
+
     // Notifications
     notificationsPageTitle: 'Thông Báo',
     markAllRead: 'Đánh dấu tất cả đã đọc',
@@ -794,7 +803,7 @@ const translations = {
     noNotifications: 'Không có thông báo',
     allRead: 'Bạn đã đọc hết thông báo',
     noNewNotifications: 'Chưa có thông báo mới',
-    
+
     // Change Password
     changePasswordTitle: 'Đổi Mật Khẩu',
     changePasswordSubtitle: 'Cập nhật mật khẩu để bảo mật tài khoản',
@@ -819,7 +828,7 @@ const translations = {
     securityTip2: 'Thay đổi mật khẩu định kỳ mỗi 3-6 tháng',
     securityTip3: 'Sử dụng mật khẩu khác nhau cho các tài khoản',
     securityTip4: 'Không sử dụng thông tin cá nhân dễ đoán làm mật khẩu',
-    
+
     // Achievements
     achievementsPageTitle: 'Thành Tích & Đánh Giá',
     achievementsTab: 'Thành tích',
@@ -833,15 +842,18 @@ const translations = {
     totalReviewsStats: 'Tổng đánh giá',
     fiveStarsCount: '5 sao',
     satisfactionRate: 'Tỷ lệ hài lòng',
-    
+
     // Driver Assignment
-    searchDriver: 'Tìm kiếm tài xế...',
-    // available: 'Sẵn sàng',
+    // assignDriver: 'Phân Công Tài Xế', // Duplicate
+    // searchDriver: 'Tìm kiếm tài xế...', // Duplicate
+    // tripsCount: 'chuyến', // Duplicate
+    available: 'Sẵn sàng',
     busy: 'Đang bận',
-    
+
     // Payment Modal
-    // payment: 'Thanh Toán',
+    payment: 'Thanh Toán',
     paymentSuccess: 'Thanh toán thành công!',
+    // ticketConfirmed: 'Vé của bạn đã được xác nhận', // Duplicate
     ticketInfo: 'Thông tin vé',
     routeLabel: 'Tuyến đường:',
     dateLabel: 'Ngày đi:',
@@ -853,17 +865,18 @@ const translations = {
     creditCardDesc: 'Visa, Mastercard, JCB',
     momoWallet: 'Ví MoMo',
     momoWalletDesc: 'Thanh toán qua ví điện tử',
-    // bankTransfer: 'Chuyển khoản ngân hàng',
-    Directbanktransfer: 'Chuyển khoản trực tiếp',
+    // bankTransfer: 'Chuyển khoản ngân hàng', // Duplicate
+    bankTransferDesc: 'Chuyển khoản trực tiếp',
     cardNumber: 'Số thẻ',
     cardNumberPlaceholder: '1234 5678 9012 3456',
     expiryDate: 'Ngày hết hạn',
     expiryDatePlaceholder: 'MM/YY',
     cardholderName: 'Tên chủ thẻ',
     cardholderPlaceholder: 'NGUYEN VAN A',
+    // cancel: 'Hủy', // Duplicate
     processingPayment: 'Đang xử lý...',
     payButton: 'Thanh toán',
-    
+
     // Company Management
     companyManagementTitle: 'Quản Lý Nhà Xe',
     companyManagementDesc: 'Quản lý các nhà xe trên hệ thống',
@@ -872,21 +885,23 @@ const translations = {
     activeStatus: 'Đang hoạt động',
     totalVehiclesAll: 'Tổng số xe',
     searchByNameEmail: 'Tìm kiếm theo tên, email...',
+    // allStatus: 'Tất cả trạng thái', // Duplicate
     activeLabel: 'Hoạt động',
     suspendedLabel: 'Tạm ngưng',
     companyColumn: 'Nhà xe',
-    // contactColumn: 'Liên hệ',
+    contactColumn: 'Liên hệ',
     vehiclesColumn: 'Số xe',
-    // tripsColumn: 'Chuyến đi',
+    tripsColumn: 'Chuyến đi',
     revenueColumn: 'Doanh thu',
-    // ratingColumn: 'Đánh giá',
+    ratingColumn: 'Đánh giá',
     statusColumn: 'Trạng thái',
-    actionsColumn: 'Thao tác',
+    actionsColumn: 'Hành động',
     joinedLabel: 'Tham gia:',
+    // viewDetails: 'Xem chi tiết', // Duplicate
     editAction: 'Sửa',
     suspendAction: 'Tạm ngưng',
     activateAction: 'Kích hoạt',
-    
+
     // User Management
     userManagementTitle: 'Quản Lý Người Dùng',
     userManagementDesc: 'Quản lý tất cả người dùng trên hệ thống',
@@ -906,7 +921,7 @@ const translations = {
     joinDateColumn: 'Ngày tham gia',
     banUser: 'Cấm',
     unbanUser: 'Bỏ cấm',
-    
+
     // System Dashboard
     systemDashboardTitleAlt: 'Dashboard Hệ Thống',
     systemAdminLabel: 'Quản trị viên hệ thống',
@@ -916,12 +931,12 @@ const translations = {
     totalVehiclesStats: 'Tổng xe',
     monthlyRevenueStats: 'Doanh thu tháng',
     revenueOverview: 'Tổng Quan Doanh Thu',
-    // thisMonth: 'Tháng này',
+    thisMonth: 'Tháng này',
     thisQuarter: 'Quý này',
-    // thisYear: 'Năm nay',
+    thisYear: 'Năm nay',
     topCompanies: 'Top Nhà Xe',
     companyNameColumn: 'Tên nhà xe',
-    
+
     // Review Management
     reviewManagementTitle: 'Quản Lý Đánh Giá',
     reviewManagementDesc: 'Quản lý đánh giá và phản hồi từ khách hàng',
@@ -941,7 +956,7 @@ const translations = {
     deleteReview: 'Xóa',
     tripDateLabel: 'Chuyến đi:',
     likesLabel: 'lượt thích',
-    
+
     // About Page
     aboutDescription: 'Nền tảng đặt vé xe khách trực tuyến hàng đầu Việt Nam, mang đến trải nghiệm đặt vé nhanh chóng, an toàn và tiện lợi cho hàng triệu hành khách',
     routesCount: 'Tuyến đường',
@@ -973,7 +988,7 @@ const translations = {
     ourTeamDesc: 'Những con người đam mê, tận tâm và không ngừng sáng tạo',
     joinUs: 'Tham gia cùng chúng tôi',
     joinUsDesc: 'Hãy là một phần trong hành trình phát triển của VeXe.com',
-    
+
     // Payment Page
     paymentTitle: 'Thanh Toán',
     paymentSubtitle: 'Chọn phương thức thanh toán để hoàn tất đặt vé',
@@ -1001,8 +1016,8 @@ const translations = {
     bankPaymentDesc: 'Chuyển khoản trực tiếp',
     completePayment: 'Hoàn Tất Thanh Toán',
     processingPaymentText: 'Đang xử lý thanh toán...',
-    
-    // QR Ticket Page  
+
+    // QR Ticket Page
     qrTicketTitle: 'Vé Điện Tử',
     downloadQR: 'Tải xuống',
     shareQR: 'Chia sẻ',
@@ -1018,7 +1033,7 @@ const translations = {
     needHelp: 'Cần Hỗ Trợ?',
     contactHotline: 'Liên hệ hotline',
     customerCare: 'Chăm sóc khách hàng',
-    
+
     // Contact Page
     getInTouch: 'Liên Hệ',
     getInTouchDesc: 'Chúng tôi rất mong được nghe từ bạn',
@@ -1033,15 +1048,16 @@ const translations = {
     mondayFriday: 'Thứ 2 - Thứ 6',
     saturdaySunday: 'Thứ 7 - Chủ nhật',
     followUs: 'Theo Dõi Chúng Tôi',
-    
+
     // Driver Trip Detail (NEW)
     checkinProgress: 'Tiến Độ Check-in',
+    navigation: 'Dẫn đường',
     callDispatch: 'Gọi TT',
     reportIssue: 'Báo cáo',
     passengerList: 'Danh Sách Hành Khách',
     seatLabel: 'Ghế:',
     ticketCodeLabel: 'Mã vé:',
-    
+
     // QR Scanner (NEW)
     scanQRInstruction: 'Di chuyển camera đến mã QR trên vé của hành khách',
     holdSteady: 'Giữ camera ổn định để quét',
@@ -1050,7 +1066,7 @@ const translations = {
     checkinSuccess: 'Check-in Thành Công!',
     invalidTicket: 'Mã vé không hợp lệ',
     pleaseTryAgain: 'Vui lòng thử lại',
-    
+
     // Navigation (NEW)
     speedLabel: 'Tốc độ',
     remainingLabel: 'Còn lại',
@@ -1059,7 +1075,7 @@ const translations = {
     reportIncident: 'Báo sự cố',
     callSupport: 'Gọi hỗ trợ',
     stopPoint: 'Điểm dừng',
-    
+
     // Earnings (NEW)
     earningsTitle: 'Thu Nhập',
     earningsSubtitle: 'Quản lý thu nhập và chi phí của bạn',
@@ -1067,37 +1083,67 @@ const translations = {
     baseEarnings: 'Thu nhập cơ bản',
     bonusEarnings: 'Thưởng & phụ cấp',
     currencyVND: 'VNĐ',
-    
+
     // Demo Data
     demoUserName: 'Nguyễn Văn A',
     demoUserEmail: 'nguyenvana@example.com',
     demoDestination: 'Đà Lạt',
+
     // Additional Missing Keys
     manualEntry: 'Nhập mã thủ công',
+    // confirm: 'Xác nhận', // Duplicate
     onBoard: 'Đã lên xe',
     notCheckedIn: 'Chưa lên',
-    
+
     // Driver Applications (System Admin)
-    driverApplicationsSubtitle: 'Quản lý và phê duyệt đơn đăng ký tài xế mới',
+    // driverApplicationsTitle: 'Đơn Đăng Ký Tài Xế', // Duplicate
+    // driverApplicationsSubtitle: 'Quản lý và phê duyệt đơn đăng ký tài xế mới', // Duplicate
+    // exportExcel: 'Xuất Excel', // Duplicate
+    totalApplications: 'Tổng đơn',
+    pendingApplications: 'Chờ duyệt',
+    approvedApplications: 'Đã duyệt',
+    rejectedApplications: 'Từ chối',
+    searchApplications: 'Tìm kiếm theo tên, SĐT, email...',
+    // driverColumn: 'Tài xế', // Duplicate
+    // contactColumn: 'Liên hệ', // Duplicate
     documentsColumn: 'Giấy tờ',
     submitDateColumn: 'Ngày nộp',
+    // viewDetails: 'Xem chi tiết', // Duplicate
+    // approve: 'Phê duyệt', // Duplicate
+    // reject: 'Từ chối', // Duplicate
+    addNoteOptional: 'Thêm ghi chú (tùy chọn):',
+    // approveSuccess: 'Đã phê duyệt đơn đăng ký! Tài xế sẽ nhận được email thông báo.', // Duplicate
+    // rejectSuccess: 'Đã từ chối đơn đăng ký! Email thông báo đã được gửi đến tài xế.', // Duplicate
     enterRejectReason: 'Nhập lý do từ chối:',
+    licenseNumber: 'Số bằng lái',
     experience: 'Kinh nghiệm',
     years: 'năm',
     applicationDetails: 'Chi Tiết Đơn Đăng Ký',
     applicantInfo: 'Thông Tin Ứng Viên',
+    licenseInfo: 'Thông Tin Bằng Lái',
+    experienceYears: 'Số năm kinh nghiệm',
     viewLicense: 'Xem bằng lái',
     adminNotes: 'Ghi chú của admin',
+    addNote: 'Thêm ghi chú',
     approveApplication: 'Phê duyệt',
     rejectApplication: 'Từ chối',
-    // usernameLabel: 'Tên đăng nhập',
-    // phoneNumberLabel: 'Số điện thoại',
-    // addressLabel: 'Địa chỉ',
-    // licenseImageLabel: 'Ảnh bằng lái xe',
+    noApplicationsFound: 'Không tìm thấy đơn đăng ký nào',
+    tryChangeFilter: 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm',
+    applicationCode: 'Mã đơn',
+    personalInfo: 'Thông tin cá nhân',
+    // fullNameLabel: 'Họ và tên', // Duplicate
+    // usernameLabel: 'Tên đăng nhập', // Duplicate
+    // phoneNumberLabel: 'Số điện thoại', // Duplicate
+    // addressLabel: 'Địa chỉ', // Duplicate
+    professionalInfo: 'Thông tin nghề nghiệp',
+    licenseImageLabel: 'Ảnh bằng lái xe',
     notesLabel: 'Ghi chú',
-    
+    // statusColumn: 'Trạng thái', // Duplicate
+    // actionsColumn: 'Thao tác', // Duplicate
+
     // Demo Login
     demoLoginInstruction: 'Nhập bất kỳ tên và mật khẩu để đăng nhập',
+    demoExample: 'Ví dụ: admin / password',
   },
   en: {
     // Header
@@ -1111,7 +1157,7 @@ const translations = {
     account: 'Account',
     myTrips: 'My Trips',
     profile: 'Profile',
-    
+
     // Hero
     heroTitle: 'Book Bus Tickets Online',
     heroSubtitle: 'Fast - Safe - Convenient',
@@ -1121,13 +1167,13 @@ const translations = {
     search: 'Search',
     selectDeparture: 'Select departure',
     selectDestination: 'Select destination',
-    
+
     // Popular Routes
     popularRoutes: 'Popular Routes',
     popularDestinations: 'Popular Destinations',
     tripsPerDay: 'trips/day',
     from: 'From',
-    
+
     // Features
     features: 'Why Choose Us',
     feature1Title: 'Quick Booking',
@@ -1151,14 +1197,14 @@ const translations = {
     qualityAssuredDesc: 'Trusted bus company with high service standards',
     multiplePayments: 'Multiple Payment Options',
     multiplePaymentsDesc: 'Supports convenient and secure payment methods',
-    
+
     // Promo Banner
     limitedOffer: 'Limited Time Offer',
     specialOfferTitle: 'Special Offer - 20% Off Your First Booking!',
     useCode: 'Use code',
     whenCheckout: 'at checkout. Only for new customers.',
     bookNowAndSave: 'Book Now & Save',
-    
+
     // Footer
     platformDescription: 'Vietnam\'s leading online bus ticket booking platform',
     aboutUs: 'About Us',
@@ -1170,7 +1216,7 @@ const translations = {
     bookingGuide: 'Booking Guide',
     refundPolicy: 'Refund Policy',
     feedbackAndComplaint: 'Feedback & Complaints',
-    contactInformation: 'Contact Information',
+    contactInfo: 'Contact Information',
     addressLabel: 'Address',
     addressValue: '123 ABC Street, District 1, Ho Chi Minh City',
     phoneLabel: 'Phone',
@@ -1178,7 +1224,7 @@ const translations = {
     mapLocation: 'Map Location',
     sendMessage: 'Send Message',
     allRightsReserved: 'All rights reserved',
-    
+
     // Contact
     contactTitle: 'Contact Us',
     contactSubtitle: 'We are always ready to help you',
@@ -1187,11 +1233,11 @@ const translations = {
     phone: 'Phone number',
     message: 'Message',
     send: 'Send message',
-    
+
     // Routes Page
     allRoutes: 'All Routes',
     routesSubtitle: 'Discover popular routes',
-    
+
     // Search Results
     searchResults: 'Search Results',
     foundTrips: 'Found',
@@ -1206,7 +1252,7 @@ const translations = {
     amenityDrink: 'Drinks',
     amenityAC: 'Air Conditioning',
     amenityTV: 'TV',
-    
+
     // Hotline
     hotlineTitle: '24/7 Support Hotline',
     hotlineSubtitle: 'We are always ready to help you anytime',
@@ -1214,7 +1260,7 @@ const translations = {
     bookingSupport: 'Booking support',
     technicalSupport: 'Technical support',
     complaint: 'Complaints & Feedback',
-    
+
     // Ticket Lookup
     ticketLookupTitle: 'Ticket Lookup',
     ticketLookupHeader: 'Ticket Information Lookup',
@@ -1239,7 +1285,7 @@ const translations = {
     cancelTicket: 'Cancel Ticket',
     sleeper: 'Sleeper',
     seating: 'Seating',
-    
+
     // My Trips
     myTripsTitle: 'My Trips',
     allTrips: 'All',
@@ -1257,11 +1303,11 @@ const translations = {
     upcomingStatus: 'Upcoming',
     completedStatus: 'Completed',
     cancelledStatus: 'Cancelled',
-    
+
     // Messages
     selectBothLocations: 'Please select both departure and destination',
     messageSent: 'Message sent successfully! We will respond soon.',
-    
+
     // Settings Page
     settings: 'Settings',
     settingsSubtitle: 'Manage bus company system settings',
@@ -1271,7 +1317,7 @@ const translations = {
     security: 'Security',
     payment: 'Payment',
     backup: 'Backup',
-    
+
     // General Settings
     generalSettings: 'General Settings',
     generalSettingsDesc: 'General system configuration',
@@ -1284,7 +1330,7 @@ const translations = {
     businessHoursDesc: 'Configure working hours',
     weekdays: 'Monday - Friday',
     weekend: 'Saturday - Sunday',
-    
+
     // Company Settings
     companySettings: 'Company Information',
     companySettingsDesc: 'Update bus company information',
@@ -1294,7 +1340,7 @@ const translations = {
     website: 'Website',
     companyLogo: 'Company logo',
     uploadLogo: 'Upload logo',
-    
+
     // Pricing Settings
     pricingSettings: 'Pricing Settings',
     pricingSettingsDesc: 'Manage ticket pricing policy',
@@ -1304,7 +1350,7 @@ const translations = {
     lateCancellationHours: 'Late Cancellation Hours',
     childDiscount: 'Child Discount (%)',
     studentDiscount: 'Student Discount (%)',
-    
+
     // Notification Settings
     notificationSettings: 'Notification Settings',
     notificationSettingsDesc: 'Manage system notifications',
@@ -1321,7 +1367,7 @@ const translations = {
     cancellationEmailDesc: 'Notify customers about cancellations',
     reminderEmail: 'Trip Reminder Email',
     reminderEmailDesc: 'Remind customers 24h before departure',
-    
+
     // Security Settings
     securitySettings: 'Security',
     securitySettingsDesc: 'Account and system security settings',
@@ -1336,7 +1382,7 @@ const translations = {
     securityPolicies: 'Security Policies',
     sessionTimeout: 'Session Timeout (minutes)',
     maxLoginAttempts: 'Maximum Login Attempts',
-    
+
     // Payment Settings
     paymentGateway: 'Payment Gateway',
     paymentGatewayDesc: 'Manage payment methods',
@@ -1347,10 +1393,10 @@ const translations = {
     zalopay: 'ZaloPay',
     zalopayDesc: 'ZaloPay e-wallet',
     bankTransfer: 'Bank Transfer',
-    Directbanktransfer: 'Payment via bank transfer',
+    bankTransferDesc: 'Payment via bank transfer',
     cash: 'Cash',
     cashDesc: 'Direct payment',
-    
+
     // Backup Settings
     backupSettings: 'Data Backup',
     backupSettingsDesc: 'Manage automatic backup and restore',
@@ -1364,7 +1410,7 @@ const translations = {
     daily: 'Daily',
     weekly: 'Weekly',
     monthly: 'Monthly',
-    
+
     // Common
     save: 'Save',
     saveChanges: 'Save Changes',
@@ -1383,7 +1429,7 @@ const translations = {
     error: 'Error',
     warning: 'Warning',
     info: 'Information',
-    
+
     // Admin Dashboard
     dashboard: 'Dashboard',
     statistics: 'Statistics',
@@ -1393,7 +1439,7 @@ const translations = {
     revenue: 'Revenue',
     customers: 'Customers',
     bookings: 'Bookings',
-    
+
     // Admin Menu Items
     companyAdmin: 'Company',
     systemAdmin: 'Admin',
@@ -1406,6 +1452,8 @@ const translations = {
     userManagement: 'Users',
     reviewManagement: 'Reviews',
     dataManagement: 'Data',
+    promoCodeManagement: 'Promo Codes',
+    routeImagesManagement: 'Route Images',
     underDevelopment: 'Under Development',
     pageUnderConstruction: 'is under construction',
     lightTheme: 'Light',
@@ -1414,7 +1462,7 @@ const translations = {
     switchToDark: 'Switch to dark',
     switchToEnglish: 'Switch to English',
     switchToVietnamese: 'Chuyển sang Tiếng Việt',
-    
+
     // Driver Portal
     driverPortal: 'Driver Portal',
     mySchedule: 'My Schedule',
@@ -1424,7 +1472,7 @@ const translations = {
     passengers: 'Passengers',
     checkIn: 'Check-in',
     scanQR: 'Scan QR',
-    driverInformation: 'Driver Information',
+    driverInfo: 'Driver Information',
     licenseNumber: 'License Number',
     idCard: 'ID Card Number',
     achievements: 'Achievements & Ratings',
@@ -1432,7 +1480,7 @@ const translations = {
     totalTrips: 'Total Trips',
     onTimeRate: 'On-Time Rate',
     safetyScore: 'Safety Score',
-    
+
     // Driver Home
     navigation: 'Navigation',
     earnings: 'Earnings',
@@ -1448,7 +1496,7 @@ const translations = {
     searchTrips: 'Search trips...',
     distance: 'Distance',
     boarded: 'Boarded',
-    
+
     // Notifications
     notificationsTitle: 'Notifications',
     viewAll: 'View All',
@@ -1458,11 +1506,11 @@ const translations = {
     minutesAgo: 'minutes ago',
     hourAgo: 'hour ago',
     hoursAgo: 'hours ago',
-    
+
     // Trip Details
     vehiclePlate: 'Vehicle Plate',
     noTrips: 'No trips available',
-    
+
     // Promo Codes
     promoCodes: 'Promo Codes',
     promoCode: 'Promo Code',
@@ -1476,10 +1524,11 @@ const translations = {
     applicableRoutes: 'Applicable Routes',
     minAmount: 'Minimum Amount',
     maxDiscount: 'Maximum Discount',
-    // useCode: 'Use Code',
+    useCode: 'Use Code',
+    viewDetails: 'View Details',
     availablePromoCodes: 'Available Promo Codes',
     selectAndApply: 'Select and apply the appropriate code',
-    
+
     // Seat Selection
     selectSeat: 'Select Seat',
     seatMap: 'Seat Map',
@@ -1489,7 +1538,7 @@ const translations = {
     selected: 'Selected',
     booked: 'Booked',
     holding: 'Holding',
-    
+
     // Vehicle Types
     vehicleType: 'Vehicle Type',
     sleeperBus: 'Sleeper Bus',
@@ -1499,7 +1548,7 @@ const translations = {
     beds: 'Beds',
     seats: 'Seats',
     vehicleDetails: 'Vehicle Details',
-    
+
     // Forgot Password
     forgotPassword: 'Forgot Password',
     resetPassword: 'Reset Password',
@@ -1523,11 +1572,11 @@ const translations = {
     noteLabel: 'Note:',
     checkSpamFolder: 'Check your spam folder if you don\'t see the email in your inbox.',
     resetLinkNote: 'We will send a password reset link to this email',
-    
+
     // Dashboard Company
     companyDashboard: 'Company Dashboard',
     totalVehicles: 'Total Vehicles',
-    // todayTrips: "Today's Trips",
+    // todayTrips: "Today's Trips", // Duplicate
     totalPassengers: 'Total Passengers',
     monthlyRevenue: 'Monthly Revenue',
     revenue7Days: 'Revenue Last 7 Days',
@@ -1535,8 +1584,12 @@ const translations = {
     report: 'Report',
     days7: '7 days',
     days30: '30 days',
+    // running: 'Running', // Duplicate
+    // aboutToDepart: 'About to depart', // Duplicate
+    // completed: 'Completed', // Duplicate
+    // vehiclePlate: 'Vehicle Plate', // Duplicate
     bookedSeats: 'Booked',
-    
+
     // System Dashboard
     systemDashboard: 'System Dashboard',
     totalCompanies: 'Total Companies',
@@ -1550,7 +1603,7 @@ const translations = {
     newDriverApplication: 'New driver application',
     bookingCompleted: 'Booking completed',
     systemAlert: 'System alert',
-    
+
     // Vehicle Management
     vehicleList: 'Vehicle List',
     addNewVehicle: 'Add New Vehicle',
@@ -1594,10 +1647,10 @@ const translations = {
     vipSleeperBus: 'VIP Sleeper Bus',
     seatBusOption: 'Seat Bus',
     limousineOption: 'Limousine',
-    // seatNumber: 'Seat Number',
+    seatNumber: 'Seat Number',
     yearOfManufacture: 'Year of Manufacture',
     manufacturerBrand: 'Manufacturer Brand',
-    
+
     // Driver Management
     driverManagementTitle: 'Driver Management',
     driverManagementDesc: 'Manage the driver team',
@@ -1606,7 +1659,7 @@ const translations = {
     availableDrivers: 'Available',
     busyDrivers: 'Busy',
     averageRating: 'Average Rating',
-    searchName: 'Search by name, phone number, license...',
+    searchDriver: 'Search by name, phone number, license...',
     allStatus: 'All Statuses',
     availableStatus: 'Available',
     busyStatus: 'Busy',
@@ -1620,17 +1673,20 @@ const translations = {
     joinedDate: 'Joined Date',
     addNewDriverTitle: 'Add New Driver',
     licenseNumberLabel: 'License Number',
-    
+
     // Route Management
     routeManagementTitle: 'Route Management',
     routeManagementDesc: 'Manage schedules and trips',
     createNewTrip: 'Create New Trip',
+    totalTrips: 'Total Trips',
     scheduledTrips: 'Scheduled',
     runningTrips: 'Running',
     totalTicketsSold: 'Total Tickets Sold',
     searchRoute: 'Search by route, license plate...',
     scheduledStatus: 'Scheduled',
     runningStatus: 'Running',
+    completedStatus: 'Completed',
+    cancelledStatus: 'Cancelled',
     routeColumn: 'Route',
     timeColumn: 'Time',
     dateColumn: 'Date',
@@ -1638,7 +1694,7 @@ const translations = {
     seatsColumn: 'Seats',
     assignDriver: 'Assign Driver',
     driverAssigned: 'Driver assigned successfully!',
-    
+
     // Booking Management
     bookingManagementTitle: 'Booking Management',
     bookingManagementDesc: 'View and manage bookings',
@@ -1656,12 +1712,12 @@ const translations = {
     tripInformation: 'Trip Information',
     passengerInformation: 'Passenger Information',
     exportBookings: 'Export Bookings',
-    
+
     // Additional Route Management
     selectVehicle: 'Select Vehicle',
     createTrip: 'Create Trip',
     ticketPrice: 'Ticket Price',
-    
+
     // Driver Applications
     driverApplicationsTitle: 'Driver Applications',
     driverApplicationsDesc: 'Manage and approve new driver applications',
@@ -1672,11 +1728,12 @@ const translations = {
     rejectedApplications: 'Rejected',
     searchApplications: 'Search by name, phone number, email...',
     allApplications: 'All',
-    driverInfo: 'Driver',
-    contactInfo: 'Contact',
+    // driverInfo: 'Driver', // Duplicate
+    // contactInfo: 'Contact', // Duplicate
     licenseInfo: 'License',
     submittedDate: 'Submitted Date',
     actions: 'Actions',
+    // viewDetails: 'View Details', // Duplicate
     approve: 'Approve',
     reject: 'Reject',
     noApplicationsFound: 'No applications found',
@@ -1695,7 +1752,7 @@ const translations = {
     pendingStatus: 'Pending',
     approvedStatus: 'Approved',
     rejectedStatus: 'Rejected',
-    
+
     // FAQ Page
     faqTitle: 'Frequently Asked Questions',
     faqSubtitle: 'Find answers to your questions',
@@ -1706,7 +1763,7 @@ const translations = {
     tripCategory: 'Trip',
     supportCategory: 'Support',
     backToHome: 'Back to Home',
-    
+
     // FAQ Questions & Answers
     faq1Q: 'How to book bus tickets on VeXe.com?',
     faq1A: 'It\'s simple! Just: (1) Select departure, destination and date on homepage. (2) View list of trips and choose suitable one. (3) Select your favorite seat. (4) Fill in passenger information and payment. (5) Receive e-ticket via email and SMS.',
@@ -1727,19 +1784,21 @@ const translations = {
     faq9Q: 'What if I arrive late?',
     faq9A: 'The bus will depart on time. If you arrive late, the bus may have left the station and you will not be refunded. We recommend arriving at the bus station 15-30 minutes early.',
     faq10Q: 'How to contact customer service?',
-    faq10A: 'You can contact us via: (1) Hotline: 1900 6067 (24/7). (2) Email: support@vexe.com. (3) Live chat on website. (4) Facebook Fanpage: VeXe.com. (5) Zalo OA: VeXe Official. We are always ready to help you!',
+    faq10A: 'You can contact us via: (1) Hotline: 1900 6067 (24/7). (2) Email: support@vexe.com. (3) Live chat on website. (4) Fanpage Facebook: VeXe.com. (5) Zalo OA: VeXe Official. We are always ready to help you!',
     faq11Q: 'I forgot my booking code, how to find it?',
     faq11A: 'Don\'t worry! You can: (1) Check the email used for booking. (2) Go to "Ticket Lookup" on website and enter phone number. (3) Contact hotline 1900 6067 for support.',
     faq12Q: 'Does VeXe.com have a mobile app?',
     faq12A: 'Yes! You can download VeXe.com app on App Store (iOS) and Google Play (Android). The app has a friendly interface, easy to use and receives many exclusive offers.',
-    
+
     // Auth Pages
-    driverPortalTitle: 'Driver Portal',
+    // driverPortalTitle: 'Driver Portal', // Duplicate
     driverLoginSubtitle: 'Login to start working',
     companyAdminTitle: 'Company Management',
     companyLoginSubtitle: 'Login to manage company',
     systemAdminTitle: 'System Administration',
     systemLoginSubtitle: 'Login with administrator privileges',
+    mobilePreviewTitle: 'Mobile Preview',
+    previewApp: 'Preview mobile app',
     managementPortal: 'Management Portal',
     manageTrips: 'Manage trips',
     manageBusiness: 'Manage business',
@@ -1758,7 +1817,7 @@ const translations = {
     demoInstructions: 'Enter any username and password to login',
     demoExample: 'Example:',
     pleaseEnterAllInfo: 'Please enter all information!',
-    
+
     // Driver Registration
     driverRegistrationTitle: 'Driver Registration',
     driverRegistrationSubtitle: 'Join our professional driver team',
@@ -1772,10 +1831,10 @@ const translations = {
     accountInfoSection: 'Account Information',
     fullNameLabel: 'Full Name',
     fullNamePlaceholder: 'John Doe',
-    // phoneLabel: 'Phone Number',
+    phoneLabel: 'Phone Number',
     phonePlaceholder: '0123456789',
-    // emailPlaceholder: 'email@example.com',
-    // addressLabel: 'Address',
+    emailPlaceholder: 'email@example.com',
+    addressLabel: 'Address',
     addressPlaceholder: '123 ABC Street, District 1, HCMC',
     licenseNumberField: 'Driver License Number',
     licenseNumberPlaceholder: '123456789',
@@ -1802,391 +1861,428 @@ const translations = {
     passwordTooShort: 'Password must be at least 6 characters!',
     registrationSuccessMessage: 'Registration successful! Your application is pending approval. We will contact you within 24-48 hours.',
     required: '*',
-    
+
     // Driver Profile & Settings
     profileAndSettings: 'Profile & Settings',
     personalInfo: 'Personal Information',
-    // tripHistory: 'Trip History',
-    changePasswordOption: 'Change Password',
-    achievementsAndRatings: 'Achievements & Ratings',
-    employeeCode: 'Employee Code',
-    excellentDriver: 'Excellent Driver',
-    tripsCountValue: 'Trips',
-    rating: 'Rating',
-    onTime: 'On Time',
-    thisMonthStats: 'This Month\'s Statistics',
-    totalTripsThisMonth: 'Total Trips',
-    revenueLabel: 'Revenue',
-    comparedToLastMonth: 'compared to last month',
-    loginSubtitle: 'Login',
-    register: 'Register',
-    registerSubtitle: 'Register a new Account',
-    haveAccount: 'Already have an account?',
-    loginNow: 'Login now',
-    emailField: 'Email',
-    confirmPassword: 'Confirm Password',
-    enterConfirmPassword: 'Re-enter password',
-    
+    // tripHistory: 'Trip History', // Duplicate
+    // changePasswordOption: 'Change Password', // Duplicate
+    // achievementsAndRatings: 'Achievements & Ratings', // Duplicate
+    // employeeCode: 'Employee Code', // Duplicate
+    // excellentDriver: 'Excellent Driver', // Duplicate
+    // tripsCount: 'Trips', // Duplicate
+    // rating: 'Rating', // Duplicate
+    // onTime: 'On Time', // Duplicate
+    // thisMonthStats: 'This Month\'s Statistics', // Duplicate
+    // totalTripsThisMonth: 'Total Trips', // Duplicate
+    // revenueLabel: 'Revenue', // Duplicate
+    // comparedToLastMonth: 'compared to last month', // Duplicate
+    // loginSubtitle: 'Login', // Duplicate
+    // register: 'Register', // Duplicate
+    // haveAccount: 'Already have an account?', // Duplicate
+    // loginNow: 'Login now', // Duplicate
+    // emailField: 'Email', // Duplicate
+    // confirmPassword: 'Confirm Password', // Duplicate
+    // enterConfirmPassword: 'Re-enter password', // Duplicate
+
     // Driver Profile Detail
-    backToProfile: 'Back',
-    editProfile: 'Edit',
-    saveProfile: 'Save',
-    cancelEdit: 'Cancel',
-    licenseInfoSection: 'License Information',
-    dateOfBirth: 'Date of Birth',
-    phoneNumberLabel: 'Phone Number',
-    emailAddress: 'Email',
-    idCardNumber: 'ID Card Number',
-    // joinedDate: 'Joined Date',
-    addressInfo: 'Address',
-    licenseNumberInfo: 'License Number',
-    licenseExpiry: 'Expiry Date',
-    licenseImages: 'License Images',
-    frontSide: 'Front Side',
-    backSide: 'Back Side',
-    employeeCodeLabel: 'Employee Code',
-    professionalDriver: 'Professional Driver',
-    
+    // backToProfile: 'Back', // Duplicate
+    // editProfile: 'Edit', // Duplicate
+    // saveProfile: 'Save', // Duplicate
+    // cancelEdit: 'Cancel', // Duplicate
+    // personalInfoSection: 'Personal Information', // Duplicate
+    // licenseInfoSection: 'License Information', // Duplicate
+    // fullNameLabel: 'Full Name', // Duplicate
+    // dateOfBirth: 'Date of Birth', // Duplicate
+    // phoneNumberLabel: 'Phone Number', // Duplicate
+    // emailAddress: 'Email', // Duplicate
+    // idCardNumber: 'ID Card Number', // Duplicate
+    // joinedDate: 'Joined Date', // Duplicate
+    // addressInfo: 'Address', // Duplicate
+    // licenseNumberInfo: 'License Number', // Duplicate
+    // licenseExpiry: 'Expiry Date', // Duplicate
+    // licenseImages: 'License Images', // Duplicate
+    // frontSide: 'Front Side', // Duplicate
+    // backSide: 'Back Side', // Duplicate
+    // employeeCodeLabel: 'Employee Code', // Duplicate
+    // professionalDriver: 'Professional Driver', // Duplicate
+
     // Trip History
-    tripHistoryTitle: 'Trip History Title',
-    tripHistorySubtitle: 'Review completed trips',
-    thisWeek: 'This Week',
-    thisMonth: 'This Month',
-    thisYear: 'This Year',
-    tripsCompleted: 'Trips',
-    kmDriven: 'Km Driven',
-    passengersServed: 'Passengers',
-    totalRevenue: 'Revenue',
-    averageRatingLabel: 'Avg. Rating',
-    tripDetails: 'Trip Details',
-    completedLabel: 'Completed',
-    passengersLabel: 'passengers',
-    performanceExcellent: 'Excellent Performance! 🎉',
-    performanceSummary: 'You have completed',
-    inPeriod: 'trips in this',
-    week: 'week',
-    month: 'month',
-    // year: 'year',
-    withRating: 'with an average rating of',
-    
+    // tripHistoryTitle: 'Trip History', // Duplicate
+    // tripHistorySubtitle: 'Review completed trips', // Duplicate
+    // thisWeek: 'This Week', // Duplicate
+    // thisMonth: 'This Month', // Duplicate
+    // thisYear: 'This Year', // Duplicate
+    // tripsCompleted: 'Trips', // Duplicate
+    // kmDriven: 'Km Driven', // Duplicate
+    // passengersServed: 'Passengers', // Duplicate
+    // totalRevenue: 'Revenue', // Duplicate
+    // averageRatingLabel: 'Avg. Rating', // Duplicate
+    // tripDetails: 'Trip Details', // Duplicate
+    // completedLabel: 'Completed', // Duplicate
+    // passengersLabel: 'passengers', // Duplicate
+    // performanceExcellent: 'Excellent Performance! 🎉', // Duplicate
+    // performanceSummary: 'You have completed', // Duplicate
+    // inPeriod: 'trips in this', // Duplicate
+    // week: 'week', // Duplicate
+    // month: 'month', // Duplicate
+    // year: 'year', // Duplicate
+    // withRating: 'with an average rating of', // Duplicate
+
     // Notifications
-    notificationsPageTitle: 'Notifications',
-    markAllRead: 'Mark all as read',
-    unreadNotifications: 'unread notifications',
-    allNotifications: 'All',
-    unreadOnly: 'Unread',
-    readOnly: 'Read',
-    closeButton: 'Close',
-    detailsLabel: 'Details',
-    viewDetailsButton: 'View details →',
-    noNotifications: 'No notifications',
-    allRead: 'You have read all notifications',
-    noNewNotifications: 'No new notifications',
-    
+    // notificationsPageTitle: 'Notifications', // Duplicate
+    // markAllRead: 'Mark all as read', // Duplicate
+    // unreadNotifications: 'unread notifications', // Duplicate
+    // allNotifications: 'All', // Duplicate
+    // unreadOnly: 'Unread', // Duplicate
+    // readOnly: 'Read', // Duplicate
+    // closeButton: 'Close', // Duplicate
+    // detailsLabel: 'Details', // Duplicate
+    // viewDetailsButton: 'View details →', // Duplicate
+    // noNotifications: 'No notifications', // Duplicate
+    // allRead: 'You have read all notifications', // Duplicate
+    // noNewNotifications: 'No new notifications', // Duplicate
+
     // Change Password
-    changePasswordTitle: 'Change Password',
-    changePasswordSubtitle: 'Update your password for account security',
-    currentPasswordLabel: 'Current Password',
-    newPasswordLabel: 'New Password',
-    confirmNewPasswordLabel: 'Confirm New Password',
-    enterCurrentPassword: 'Enter current password',
-    enterNewPassword: 'Enter new password',
-    reEnterNewPassword: 'Re-enter new password',
-    passwordRequirements: 'Password requirements:',
-    minLength: 'At least 8 characters',
-    hasUppercase: 'Uppercase letter',
-    hasLowercase: 'Lowercase letter',
-    hasNumber: 'Number',
-    hasSpecialChar: 'Special character',
-    passwordMismatchError: 'Passwords do not match',
-    changePasswordButton: 'Change Password',
-    passwordChangeSuccess: 'Password changed successfully!',
-    redirecting: 'Redirecting...',
-    securityTipsTitle: '💡 Account Security',
-    securityTip1: 'Never share your password with anyone',
-    securityTip2: 'Change your password every 3-6 months',
-    securityTip3: 'Use different passwords for different accounts',
-    securityTip4: 'Do not use easily guessable personal information',
-    
+    // changePasswordTitle: 'Change Password', // Duplicate
+    // changePasswordSubtitle: 'Update your password for account security', // Duplicate
+    // currentPasswordLabel: 'Current Password', // Duplicate
+    // newPasswordLabel: 'New Password', // Duplicate
+    // confirmNewPasswordLabel: 'Confirm New Password', // Duplicate
+    // enterCurrentPassword: 'Enter current password', // Duplicate
+    // enterNewPassword: 'Enter new password', // Duplicate
+    // reEnterNewPassword: 'Re-enter new password', // Duplicate
+    // passwordRequirements: 'Password requirements:', // Duplicate
+    // minLength: 'At least 8 characters', // Duplicate
+    // hasUppercase: 'Uppercase letter', // Duplicate
+    // hasLowercase: 'Lowercase letter', // Duplicate
+    // hasNumber: 'Number', // Duplicate
+    // hasSpecialChar: 'Special character', // Duplicate
+    // passwordMismatchError: 'Passwords do not match', // Duplicate
+    // changePasswordButton: 'Change Password', // Duplicate
+    // passwordChangeSuccess: 'Password changed successfully!', // Duplicate
+    // redirecting: 'Redirecting...', // Duplicate
+    // securityTipsTitle: '💡 Account Security', // Duplicate
+    // securityTip1: 'Never share your password with anyone', // Duplicate
+    // securityTip2: 'Change your password every 3-6 months', // Duplicate
+    // securityTip3: 'Use different passwords for different accounts', // Duplicate
+    // securityTip4: 'Do not use easily guessable personal information', // Duplicate
+
     // Achievements
-    achievementsPageTitle: 'Achievements & Reviews',
-    achievementsTab: 'Achievements',
-    reviewsTab: 'Reviews',
-    achievementsUnlocked: 'Unlocked',
-    totalRewards: 'Total Rewards',
-    averageProgress: 'Average Progress',
-    unlocked: 'Unlocked',
-    rewardLabel: 'Reward:',
-    averageRatingStats: 'Avg. Rating',
-    totalReviewsStats: 'Total Reviews',
-    fiveStarsCount: '5 Stars',
-    satisfactionRate: 'Satisfaction Rate',
-    
+    // achievementsPageTitle: 'Achievements & Reviews', // Duplicate
+    // achievementsTab: 'Achievements', // Duplicate
+    // reviewsTab: 'Reviews', // Duplicate
+    // achievementsUnlocked: 'Unlocked', // Duplicate
+    // totalRewards: 'Total Rewards', // Duplicate
+    // averageProgress: 'Average Progress', // Duplicate
+    // unlocked: 'Unlocked', // Duplicate
+    // rewardLabel: 'Reward:', // Duplicate
+    // averageRatingStats: 'Avg. Rating', // Duplicate
+    // totalReviewsStats: 'Total Reviews', // Duplicate
+    // fiveStarsCount: '5 Stars', // Duplicate
+    // satisfactionRate: 'Satisfaction Rate', // Duplicate
+
     // Driver Assignment
-    searchDriver: 'Search driver...',
-    // available: 'Available',
-    busy: 'Busy',
-    
+    // assignDriver: 'Assign Driver', // Duplicate
+    // searchDriver: 'Search driver...', // Duplicate
+    // tripsCount: 'trips', // Duplicate
+    // available: 'Available', // Duplicate
+    // busy: 'Busy', // Duplicate
+
     // Payment Modal
-    // payment: 'Payment',
-    paymentSuccess: 'Payment Successful!',
-    ticketInfo: 'Ticket Information',
-    routeLabel: 'Route:',
-    dateLabel: 'Date:',
-    departureTimeLabel: 'Departure Time:',
-    seatNumberLabel: 'Seat Number:',
-    totalAmount: 'Total Amount:',
-    paymentMethod: 'Payment Method',
-    creditCard: 'Credit / Debit Card',
-    creditCardDesc: 'Visa, Mastercard, JCB',
-    momoWallet: 'MoMo Wallet',
-    momoWalletDesc: 'Pay via e-wallet',
-    // bankTransfer: 'Bank Transfer',
-    bankTransferDesc: 'Direct bank transfer',
-    cardNumber: 'Card Number',
-    cardNumberPlaceholder: '1234 5678 9012 3456',
-    expiryDate: 'Expiry Date',
-    expiryDatePlaceholder: 'MM/YY',
-    cardholderName: 'Cardholder Name',
-    cardholderPlaceholder: 'NGUYEN VAN A',
-    processingPayment: 'Processing...',
-    payButton: 'Pay',
-    
+    // payment: 'Payment', // Duplicate
+    // paymentSuccess: 'Payment Successful!', // Duplicate
+    // ticketConfirmed: 'Your ticket has been confirmed', // Duplicate
+    // ticketInfo: 'Ticket Information', // Duplicate
+    // routeLabel: 'Route:', // Duplicate
+    // dateLabel: 'Date:', // Duplicate
+    // departureTimeLabel: 'Departure Time:', // Duplicate
+    // seatNumberLabel: 'Seat Number:', // Duplicate
+    // totalAmount: 'Total Amount:', // Duplicate
+    // paymentMethod: 'Payment Method', // Duplicate
+    // creditCard: 'Credit / Debit Card', // Duplicate
+    // creditCardDesc: 'Visa, Mastercard, JCB', // Duplicate
+    // momoWallet: 'MoMo Wallet', // Duplicate
+    // momoWalletDesc: 'Pay via e-wallet', // Duplicate
+    // bankTransfer: 'Bank Transfer', // Duplicate
+    // bankTransferDesc: 'Direct bank transfer', // Duplicate
+    // cardNumber: 'Card Number', // Duplicate
+    // cardNumberPlaceholder: '1234 5678 9012 3456', // Duplicate
+    // expiryDate: 'Expiry Date', // Duplicate
+    // expiryDatePlaceholder: 'MM/YY', // Duplicate
+    // cardholderName: 'Cardholder Name', // Duplicate
+    // cardholderPlaceholder: 'NGUYEN VAN A', // Duplicate
+    // cancel: 'Cancel', // Duplicate
+    // processingPayment: 'Processing...', // Duplicate
+    // payButton: 'Pay', // Duplicate
+
     // Company Management
-    companyManagementTitle: 'Company Management',
-    companyManagementDesc: 'Manage companies in the system',
-    addCompany: 'Add Company',
-    totalCompaniesAll: 'Total Companies',
-    activeStatus: 'Active',
-    totalVehiclesAll: 'Total Vehicles',
-    searchByNameEmail: 'Search by name, email...',
-    activeLabel: 'Active',
-    suspendedLabel: 'Suspended',
-    companyColumn: 'Company',
-    // contactColumn: 'Contact',
-    vehiclesColumn: 'Vehicles',
-    // tripsColumn: 'Trips',
-    revenueColumn: 'Revenue',
-    // ratingColumn: 'Rating',
-    statusColumn: 'Status',
-    actionsColumn: 'Actions',
-    joinedLabel: 'Joined:',
-    editAction: 'Edit',
-    suspendAction: 'Suspend',
-    activateAction: 'Activate',
-    
+    // companyManagementTitle: 'Company Management', // Duplicate
+    // companyManagementDesc: 'Manage companies in the system', // Duplicate
+    // addCompany: 'Add Company', // Duplicate
+    // totalCompaniesAll: 'Total Companies', // Duplicate
+    // activeStatus: 'Active', // Duplicate
+    // totalVehiclesAll: 'Total Vehicles', // Duplicate
+    // searchByNameEmail: 'Search by name, email...', // Duplicate
+    // allStatus: 'All Status', // Duplicate
+    // activeLabel: 'Active', // Duplicate
+    // suspendedLabel: 'Suspended', // Duplicate
+    // companyColumn: 'Company', // Duplicate
+    // contactColumn: 'Contact', // Duplicate
+    // vehiclesColumn: 'Vehicles', // Duplicate
+    // tripsColumn: 'Trips', // Duplicate
+    // revenueColumn: 'Revenue', // Duplicate
+    // ratingColumn: 'Rating', // Duplicate
+    // statusColumn: 'Status', // Duplicate
+    // actionsColumn: 'Actions', // Duplicate
+    // joinedLabel: 'Joined:', // Duplicate
+    // viewDetails: 'View Details', // Duplicate
+    // editAction: 'Edit', // Duplicate
+    // suspendAction: 'Suspend', // Duplicate
+    // activateAction: 'Activate', // Duplicate
+
     // User Management
-    userManagementTitle: 'User Management',
-    userManagementDesc: 'Manage all users in the system',
-    totalUsersStats: 'Total Users',
-    activeUsers: 'Active Users',
-    bannedUsers: 'Banned',
-    totalRevenueStats: 'Total Revenue',
-    searchByNameEmailPhone: 'Search by name, email, phone...',
-    allRoles: 'All Roles',
-    userRole: 'User',
-    companyAdminRoleLabel: 'Company Admin',
-    bannedStatus: 'Banned',
-    userNameColumn: 'User',
-    roleColumn: 'Role',
-    totalTripsColumn: 'Total Trips',
-    totalSpentColumn: 'Total Spent',
-    joinDateColumn: 'Join Date',
-    banUser: 'Ban',
-    unbanUser: 'Unban',
-    
+    // userManagementTitle: 'User Management', // Duplicate
+    // userManagementDesc: 'Manage all users in the system', // Duplicate
+    // totalUsersStats: 'Total Users', // Duplicate
+    // activeUsers: 'Active Users', // Duplicate
+    // bannedUsers: 'Banned', // Duplicate
+    // totalRevenueStats: 'Total Revenue', // Duplicate
+    // searchByNameEmailPhone: 'Search by name, email, phone...', // Duplicate
+    // allRoles: 'All Roles', // Duplicate
+    // userRole: 'User', // Duplicate
+    // companyAdminRoleLabel: 'Company Admin', // Duplicate
+    // bannedStatus: 'Banned', // Duplicate
+    // userNameColumn: 'User', // Duplicate
+    // roleColumn: 'Role', // Duplicate
+    // totalTripsColumn: 'Total Trips', // Duplicate
+    // totalSpentColumn: 'Total Spent', // Duplicate
+    // joinDateColumn: 'Join Date', // Duplicate
+    // banUser: 'Ban', // Duplicate
+    // unbanUser: 'Unban', // Duplicate
+
     // System Dashboard
-    systemDashboardTitleAlt: 'System Dashboard',
-    systemAdminLabel: 'System Administrator',
-    exportReport: 'Export Report',
-    totalCompaniesStats: 'Total Companies',
-    usersStats: 'Users',
-    totalVehiclesStats: 'Total Vehicles',
-    monthlyRevenueStats: 'Monthly Revenue',
-    revenueOverview: 'Revenue Overview',
-    // thisMonth: 'This Month',
-    thisQuarter: 'This Quarter',
-    // thisYear: 'This Year',
-    topCompanies: 'Top Companies',
-    companyNameColumn: 'Company Name',
-    
+    // systemDashboardTitleAlt: 'System Dashboard', // Duplicate
+    // systemAdminLabel: 'System Administrator', // Duplicate
+    // exportReport: 'Export Report', // Duplicate
+    // totalCompaniesStats: 'Total Companies', // Duplicate
+    // usersStats: 'Users', // Duplicate
+    // totalVehiclesStats: 'Total Vehicles', // Duplicate
+    // monthlyRevenueStats: 'Monthly Revenue', // Duplicate
+    // revenueOverview: 'Revenue Overview', // Duplicate
+    // thisMonth: 'This Month', // Duplicate
+    // thisQuarter: 'This Quarter', // Duplicate
+    // thisYear: 'This Year', // Duplicate
+    // topCompanies: 'Top Companies', // Duplicate
+    // companyNameColumn: 'Company Name', // Duplicate
+
     // Review Management
-    reviewManagementTitle: 'Review Management',
-    reviewManagementDesc: 'Manage reviews and feedback from customers',
-    publishedReviews: 'Published',
-    flaggedReviews: 'Flagged',
-    searchReviews: 'Search reviews...',
-    allRatings: 'All Ratings',
-    stars: 'stars',
-    publishedLabel: 'Published',
-    hiddenLabel: 'Hidden',
-    flaggedLabel: 'Flagged',
-    reviewerColumn: 'Reviewer',
-    companyRouteColumn: 'Company & Route',
-    commentColumn: 'Comment',
-    hideReview: 'Hide',
-    showReview: 'Show',
-    deleteReview: 'Delete',
-    tripDateLabel: 'Trip:',
-    likesLabel: 'likes',
-    
+    // reviewManagementTitle: 'Review Management', // Duplicate
+    // reviewManagementDesc: 'Manage reviews and feedback from customers', // Duplicate
+    // publishedReviews: 'Published', // Duplicate
+    // flaggedReviews: 'Flagged', // Duplicate
+    // searchReviews: 'Search reviews...', // Duplicate
+    // allRatings: 'All Ratings', // Duplicate
+    // stars: 'stars', // Duplicate
+    // publishedLabel: 'Published', // Duplicate
+    // hiddenLabel: 'Hidden', // Duplicate
+    // flaggedLabel: 'Flagged', // Duplicate
+    // reviewerColumn: 'Reviewer', // Duplicate
+    // companyRouteColumn: 'Company & Route', // Duplicate
+    // commentColumn: 'Comment', // Duplicate
+    // hideReview: 'Hide', // Duplicate
+    // showReview: 'Show', // Duplicate
+    // deleteReview: 'Delete', // Duplicate
+    // tripDateLabel: 'Trip:', // Duplicate
+    // likesLabel: 'likes', // Duplicate
+
     // About Page
-    aboutDescription: 'Vietnam\'s leading online bus ticket booking platform, providing fast, safe and convenient booking experience for millions of passengers',
-    routesCount: 'Routes',
-    partnerCompanies: 'Partner Companies',
-    yearsExperience: 'Years of Experience',
-    safetyAndTrust: 'Safety & Trust',
-    safetyDescription: 'Committed to ensuring absolute safety for all passengers with a professional driver team',
-    dedicatedService: 'Dedicated Service',
-    dedicatedServiceDescription: 'Enthusiastic staff, always ready to support you 24/7',
-    highQuality: 'High Quality',
-    highQualityDescription: 'Modern fleet, full amenities, ensuring the most comfortable trip',
-    onTimeDescription: 'Commitment to depart and arrive on time, respecting your time',
-    ourStory: 'Our Story',
-    ourStoryDesc: 'VeXe.com was founded with the mission to bring the best bus ticket booking experience to Vietnamese people',
-    ourMission: 'Our Mission',
-    ourMissionDesc: 'Connecting millions of passengers with reputable bus companies, creating a safe, convenient and transparent transportation ecosystem',
-    ourJourney: 'Our Journey',
-    founded: 'Founded',
-    foundedDesc: 'VeXe.com officially launched in Ho Chi Minh City',
-    expansion: 'Expansion',
-    expansionDesc: 'Nationwide coverage with over 200 bus company partners',
-    mobileApp: 'Mobile App',
-    mobileAppDesc: 'Launched iOS and Android applications',
-    milestone5M: '5 million customers',
-    awardDesc: 'Received "Best Booking Platform" award',
-    present: 'Present',
-    presentDesc: 'Serving over 10 million customers annually',
-    ourTeam: 'Our Team',
-    ourTeamDesc: 'Passionate, dedicated people who are constantly innovating',
-    joinUs: 'Join Us',
-    joinUsDesc: 'Be a part of VeXe.com\'s development journey',
-    
+    // aboutDescription: 'Vietnam\'s leading online bus ticket booking platform, providing fast, safe and convenient booking experience for millions of passengers', // Duplicate
+    // routesCount: 'Routes', // Duplicate
+    // partnerCompanies: 'Partner Companies', // Duplicate
+    // yearsExperience: 'Years of Experience', // Duplicate
+    // safetyAndTrust: 'Safety & Trust', // Duplicate
+    // safetyDescription: 'Committed to ensuring absolute safety for all passengers with a professional driver team', // Duplicate
+    // dedicatedService: 'Dedicated Service', // Duplicate
+    // dedicatedServiceDescription: 'Enthusiastic staff, always ready to support you 24/7', // Duplicate
+    // highQuality: 'High Quality', // Duplicate
+    // highQualityDescription: 'Modern fleet, full amenities, ensuring the most comfortable trip', // Duplicate
+    // onTimeDescription: 'Commitment to depart and arrive on time, respecting your time', // Duplicate
+    // ourStory: 'Our Story', // Duplicate
+    // ourStoryDesc: 'VeXe.com was founded with the mission to bring the best bus ticket booking experience to Vietnamese people', // Duplicate
+    // ourMission: 'Our Mission', // Duplicate
+    // ourMissionDesc: 'Connecting millions of passengers with reputable bus companies, creating a safe, convenient and transparent transportation ecosystem', // Duplicate
+    // ourJourney: 'Our Journey', // Duplicate
+    // founded: 'Founded', // Duplicate
+    // foundedDesc: 'VeXe.com officially launched in Ho Chi Minh City', // Duplicate
+    // expansion: 'Expansion', // Duplicate
+    // expansionDesc: 'Nationwide coverage with over 200 bus company partners', // Duplicate
+    // mobileApp: 'Mobile App', // Duplicate
+    // mobileAppDesc: 'Launched iOS and Android applications', // Duplicate
+    // milestone5M: '5 million customers', // Duplicate
+    // awardDesc: 'Received "Best Booking Platform" award', // Duplicate
+    // present: 'Present', // Duplicate
+    // presentDesc: 'Serving over 10 million customers annually', // Duplicate
+    // ourTeam: 'Our Team', // Duplicate
+    // ourTeamDesc: 'Passionate, dedicated people who are constantly innovating', // Duplicate
+    // joinUs: 'Join Us', // Duplicate
+    // joinUsDesc: 'Be a part of VeXe.com\'s development journey', // Duplicate
+
     // Payment Page
-    paymentTitle: 'Payment',
-    paymentSubtitle: 'Choose payment method to complete booking',
-    tripSummary: 'Trip Summary',
-    departureDate: 'Departure Date',
-    selectedSeats: 'Selected Seats',
-    passengerInfo: 'Passenger Information',
-    passengerName: 'Full Name',
-    passengerPhone: 'Phone Number',
-    passengerEmail: 'Email (optional)',
-    enterPassengerName: 'Enter full name',
-    enterPassengerPhone: 'Enter phone number',
-    enterPassengerEmail: 'Enter email',
-    pricingDetails: 'Pricing Details',
-    ticketFare: 'Ticket Fare',
-    serviceFee: 'Service Fee',
-    totalPayment: 'Total Payment',
-    selectPaymentMethod: 'Select Payment Method',
-    creditCardPayment: 'Credit/Debit Card',
-    momoPayment: 'MoMo Wallet',
-    momoPaymentDesc: 'Pay via MoMo e-wallet',
-    vnpayPayment: 'VNPay',
-    vnpayPaymentDesc: 'Pay via VNPay QR',
-    bankPayment: 'Bank Transfer',
-    bankPaymentDesc: 'Direct bank transfer',
-    completePayment: 'Complete Payment',
-    processingPaymentText: 'Processing payment...',
-    
-    // QR Ticket Page  
-    qrTicketTitle: 'E-Ticket',
-    downloadQR: 'Download',
-    shareQR: 'Share',
-    printQR: 'Print Ticket',
-    showQRCode: 'Show this QR code when boarding',
-    bookingSuccess: 'Booking Successful!',
-    bookingSuccessDesc: 'Your e-ticket is ready',
-    importantNotes: 'Important Notes',
-    note1: 'Please arrive at pickup point 15-30 minutes before departure',
-    note2: 'Present QR code and ID card when boarding',
-    note3: 'Maximum luggage 20kg (free)',
-    note4: 'Contact hotline if you need assistance',
-    needHelp: 'Need Help?',
-    contactHotline: 'Contact hotline',
-    customerCare: 'Customer Care',
-    
+    // paymentTitle: 'Payment', // Duplicate
+    // paymentSubtitle: 'Choose payment method to complete booking', // Duplicate
+    // tripSummary: 'Trip Summary', // Duplicate
+    // departureDate: 'Departure Date', // Duplicate
+    // selectedSeats: 'Selected Seats', // Duplicate
+    // passengerInfo: 'Passenger Information', // Duplicate
+    // passengerName: 'Full Name', // Duplicate
+    // passengerPhone: 'Phone Number', // Duplicate
+    // passengerEmail: 'Email (optional)', // Duplicate
+    // enterPassengerName: 'Enter full name', // Duplicate
+    // enterPassengerPhone: 'Enter phone number', // Duplicate
+    // enterPassengerEmail: 'Enter email', // Duplicate
+    // pricingDetails: 'Pricing Details', // Duplicate
+    // ticketFare: 'Ticket Fare', // Duplicate
+    // serviceFee: 'Service Fee', // Duplicate
+    // totalPayment: 'Total Payment', // Duplicate
+    // selectPaymentMethod: 'Select Payment Method', // Duplicate
+    // creditCardPayment: 'Credit/Debit Card', // Duplicate
+    // momoPayment: 'MoMo Wallet', // Duplicate
+    // momoPaymentDesc: 'Pay via MoMo e-wallet', // Duplicate
+    // vnpayPayment: 'VNPay', // Duplicate
+    // vnpayPaymentDesc: 'Pay via VNPay QR', // Duplicate
+    // bankPayment: 'Bank Transfer', // Duplicate
+    // bankPaymentDesc: 'Direct bank transfer', // Duplicate
+    // completePayment: 'Complete Payment', // Duplicate
+    // processingPaymentText: 'Processing payment...', // Duplicate
+
+    // QR Ticket Page
+    // qrTicketTitle: 'E-Ticket', // Duplicate
+    // downloadQR: 'Download', // Duplicate
+    // shareQR: 'Share', // Duplicate
+    // printQR: 'Print Ticket', // Duplicate
+    // showQRCode: 'Show this QR code when boarding', // Duplicate
+    // bookingSuccess: 'Booking Successful!', // Duplicate
+    // bookingSuccessDesc: 'Your e-ticket is ready', // Duplicate
+    // importantNotes: 'Important Notes', // Duplicate
+    // note1: 'Please arrive at pickup point 15-30 minutes before departure', // Duplicate
+    // note2: 'Present QR code and ID card when boarding', // Duplicate
+    // note3: 'Maximum luggage 20kg (free)', // Duplicate
+    // note4: 'Contact hotline if you need assistance', // Duplicate
+    // needHelp: 'Need Help?', // Duplicate
+    // contactHotline: 'Contact hotline', // Duplicate
+    // customerCare: 'Customer Care', // Duplicate
+
     // Contact Page
-    getInTouch: 'Get In Touch',
-    getInTouchDesc: 'We\'d love to hear from you',
-    yourName: 'Your Name',
-    yourEmail: 'Your Email',
-    yourMessage: 'Your Message',
-    sendMessageButton: 'Send Message',
-    sendingMessage: 'Sending...',
-    contactVia: 'Or Contact Via',
-    officeAddress: 'Office Address',
-    workingHours: 'Working Hours',
-    mondayFriday: 'Monday - Friday',
-    saturdaySunday: 'Saturday - Sunday',
-    followUs: 'Follow Us',
-    
+    // getInTouch: 'Get In Touch', // Duplicate
+    // getInTouchDesc: 'We\'d love to hear from you', // Duplicate
+    // yourName: 'Your Name', // Duplicate
+    // yourEmail: 'Your Email', // Duplicate
+    // yourMessage: 'Your Message', // Duplicate
+    // sendMessageButton: 'Send Message', // Duplicate
+    // sendingMessage: 'Sending...', // Duplicate
+    // contactVia: 'Or Contact Via', // Duplicate
+    // officeAddress: 'Office Address', // Duplicate
+    // workingHours: 'Working Hours', // Duplicate
+    // mondayFriday: 'Monday - Friday', // Duplicate
+    // saturdaySunday: 'Saturday - Sunday', // Duplicate
+    // followUs: 'Follow Us', // Duplicate
+
     // Driver Trip Detail (NEW)
-    checkinProgress: 'Check-in Progress',
-    callDispatch: 'Call Dispatch',
-    reportIssue: 'Report',
-    passengerList: 'Passenger List',
-    seatLabel: 'Seat:',
-    ticketCodeLabel: 'Ticket code:',
-    
+    // checkinProgress: 'Check-in Progress', // Duplicate
+    // navigation: 'Navigate', // Duplicate
+    // callDispatch: 'Call Dispatch', // Duplicate
+    // reportIssue: 'Report', // Duplicate
+    // passengerList: 'Passenger List', // Duplicate
+    // seatLabel: 'Seat:', // Duplicate
+    // ticketCodeLabel: 'Ticket code:', // Duplicate
+
     // QR Scanner (NEW)
-    scanQRInstruction: 'Move camera to QR code on passenger ticket',
-    holdSteady: 'Hold camera steady to scan',
-    enterTicketCode: 'Enter Ticket Code',
-    enterTicketCodePlaceholder: 'Enter ticket code',
-    checkinSuccess: 'Check-in Successful!',
-    invalidTicket: 'Invalid ticket',
-    pleaseTryAgain: 'Please try again',
-    
+    // scanQRInstruction: 'Move camera to QR code on passenger ticket', // Duplicate
+    // holdSteady: 'Hold camera steady to scan', // Duplicate
+    // enterTicketCode: 'Enter Ticket Code', // Duplicate
+    // enterTicketCodePlaceholder: 'Enter ticket code', // Duplicate
+    // checkinSuccess: 'Check-in Successful!', // Duplicate
+    // invalidTicket: 'Invalid ticket', // Duplicate
+    // pleaseTryAgain: 'Please try again', // Duplicate
+
     // Navigation (NEW)
-    speedLabel: 'Speed',
-    remainingLabel: 'Remaining',
-    turnRightRoad: 'Turn right onto Highway 1A',
-    after25km: 'After 2.5km',
-    reportIncident: 'Report Incident',
-    callSupport: 'Call Support',
-    stopPoint: 'Stop Point',
-    
+    // speedLabel: 'Speed', // Duplicate
+    // remainingLabel: 'Remaining', // Duplicate
+    // turnRightRoad: 'Turn right onto Highway 1A', // Duplicate
+    // after25km: 'After 2.5km', // Duplicate
+    // reportIncident: 'Report Incident', // Duplicate
+    // callSupport: 'Call Support', // Duplicate
+    // stopPoint: 'Stop Point', // Duplicate
+
     // Earnings (NEW)
-    earningsTitle: 'Earnings',
-    earningsSubtitle: 'Manage your earnings and expenses',
-    totalEarnings: 'Total Earnings',
-    baseEarnings: 'Base Earnings',
-    bonusEarnings: 'Bonus & Allowances',
-    currencyVND: 'VND',
-    
+    // earningsTitle: 'Earnings', // Duplicate
+    // earningsSubtitle: 'Manage your earnings and expenses', // Duplicate
+    // totalEarnings: 'Total Earnings', // Duplicate
+    // baseEarnings: 'Base Earnings', // Duplicate
+    // bonusEarnings: 'Bonus & Allowances', // Duplicate
+    // currencyVND: 'VND', // Duplicate
+
     // Demo Data
-    demoUserName: 'John Doe',
-    demoUserEmail: 'johndoe@example.com',
-    demoDestination: 'Da Lat',
-    
+    // demoUserName: 'John Doe', // Duplicate
+    // demoUserEmail: 'johndoe@example.com', // Duplicate
+    // demoDestination: 'Da Lat', // Duplicate
+
     // Additional Missing Keys
-    manualEntry: 'Manual Entry',
-    onBoard: 'On Board',
-    notCheckedIn: 'Not Checked In',
-    
+    // manualEntry: 'Manual Entry', // Duplicate
+    // confirm: 'Confirm', // Duplicate
+    // onBoard: 'On Board', // Duplicate
+    // notCheckedIn: 'Not Checked In', // Duplicate
+
     // Driver Applications (System Admin)
-    driverApplicationsSubtitle: 'Manage and approve new driver registrations',
-    documentsColumn: 'Documents',
-    submitDateColumn: 'Submit Date',
-    enterRejectReason: 'Enter rejection reason:',
-    experience: 'Experience',
-    years: 'years',
-    applicationDetails: 'Application Details',
-    applicantInfo: 'Applicant Information',
-    viewLicense: 'View License',
-    adminNotes: 'Admin Notes',
-    approveApplication: 'Approve',
-    rejectApplication: 'Reject',
-    // usernameLabel: 'Username',
-    // phoneNumberLabel: 'Phone Number',
-    // addressLabel: 'Address',
-    // licenseImageLabel: 'Driver License Image',
-    notesLabel: 'Notes',
-    
+    // driverApplicationsTitle: 'Driver Registration Applications', // Duplicate
+    // driverApplicationsSubtitle: 'Manage and approve new driver registrations', // Duplicate
+    // exportExcel: 'Export Excel', // Duplicate
+    // totalApplications: 'Total', // Duplicate
+    // pendingApplications: 'Pending', // Duplicate
+    // approvedApplications: 'Approved', // Duplicate
+    // rejectedApplications: 'Rejected', // Duplicate
+    // searchApplications: 'Search by name, phone, email...', // Duplicate
+    // driverColumn: 'Driver', // Duplicate
+    // contactColumn: 'Contact', // Duplicate
+    // documentsColumn: 'Documents', // Duplicate
+    // submitDateColumn: 'Submit Date', // Duplicate
+    // viewDetails: 'View Details', // Duplicate
+    // approve: 'Approve', // Duplicate
+    // reject: 'Reject', // Duplicate
+    // addNoteOptional: 'Add note (optional):', // Duplicate
+    // approveSuccess: 'Application approved! Driver will receive an email notification.', // Duplicate
+    // rejectSuccess: 'Application rejected! Email notification has been sent to driver.', // Duplicate
+    // enterRejectReason: 'Enter rejection reason:', // Duplicate
+    // licenseNumber: 'License Number', // Duplicate
+    // experience: 'Experience', // Duplicate
+    // years: 'years', // Duplicate
+    // applicationDetails: 'Application Details', // Duplicate
+    // applicantInfo: 'Applicant Information', // Duplicate
+    // licenseInfo: 'License Information', // Duplicate
+    // experienceYears: 'Years of experience', // Duplicate
+    // viewLicense: 'View License', // Duplicate
+    // adminNotes: 'Admin Notes', // Duplicate
+    // addNote: 'Add Note', // Duplicate
+    // approveApplication: 'Approve', // Duplicate
+    // rejectApplication: 'Reject', // Duplicate
+    // noApplicationsFound: 'No applications found', // Duplicate
+    // tryChangeFilter: 'Try changing filters or search keywords', // Duplicate
+    // applicationCode: 'Application Code', // Duplicate
+    // personalInfo: 'Personal Information', // Duplicate
+    // fullNameLabel: 'Full Name', // Duplicate
+    // usernameLabel: 'Username', // Duplicate
+    // phoneNumberLabel: 'Phone Number', // Duplicate
+    // addressLabel: 'Address', // Duplicate
+    // professionalInfo: 'Professional Information', // Duplicate
+    // licenseImageLabel: 'Driver License Image', // Duplicate
+    // notesLabel: 'Notes', // Duplicate
+    // statusColumn: 'Status', // Duplicate
+    // actionsColumn: 'Actions', // Duplicate
+
     // Demo Login
-    demoLoginInstruction: 'Enter any username and password to login',
+    // demoLoginInstruction: 'Enter any username and password to login', // Duplicate
+    // demoExample: 'Example: admin / password', // Duplicate
   }
 };
 
@@ -2213,8 +2309,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLanguage(newLang);
   };
 
-  const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations.vi] || key;
+  const t = (key: string | TranslationKeys): string => {
+    // Ép kiểu để truy cập object
+    const text = translations[language][key as TranslationKeys];
+    // Fallback nếu không tìm thấy key ở ngôn ngữ hiện tại, thử tìm ở tiếng Việt, nếu không có trả về key
+    return text || translations['vi'][key as TranslationKeys] || key;
   };
 
   return (

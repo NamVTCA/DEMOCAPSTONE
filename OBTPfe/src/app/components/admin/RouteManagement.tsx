@@ -323,9 +323,8 @@ export function RouteManagement() {
       )}
 
       {/* Driver Assignment Modal */}
-      {showDriverAssignment && selectedTripForDriver && (
+      {showDriverAssignment && (
         <DriverAssignment
-          tripId={selectedTripForDriver}
           onClose={() => setShowDriverAssignment(false)}
           onAssign={handleDriverAssigned}
         />
