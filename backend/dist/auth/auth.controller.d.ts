@@ -23,6 +23,7 @@ export declare class AuthController {
     }>;
     login(dto: LoginDto): Promise<{
         accessToken: string;
+        user: any;
     } | {
         message: string;
     }>;

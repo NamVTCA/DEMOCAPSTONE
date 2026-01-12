@@ -32,8 +32,14 @@ let AuthService = class AuthService {
     }
     async login(user) {
         const payload = { sub: user._id, email: user.email, roles: user.roles };
+        const accessToken = this.jwtService.sign(payload);
+        const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+        if (userObj && userObj.password) {
+            delete userObj.password;
+        }
         return {
-            accessToken: this.jwtService.sign(payload),
+            accessToken,
+            user: userObj,
         };
     }
     async register(name, email, password, role = 'user') {

@@ -23,6 +23,7 @@ export declare class AuthService {
     }>;
     login(user: any): Promise<{
         accessToken: string;
+        user: any;
     }>;
     register(name: string, email: string, password: string, role?: string): Promise<import("mongoose").Document<unknown, {}, import("../users/schemas/user.schema").UserDocument> & import("../users/schemas/user.schema").User & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;

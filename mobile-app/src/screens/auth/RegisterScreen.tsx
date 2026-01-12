@@ -1,3 +1,4 @@
+// mobile-app/src/screens/auth/RegisterScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -18,13 +19,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { RootState } from "../../store/index-store";
+import apiService from "../../services/common/apiService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loadUser } from "../../store/authSlice";
 
 const { width, height } = Dimensions.get("window");
 
-const RegisterScreen = () => {
-  const navigation = useNavigation();
-  const dispatch = useDispatch();
-  const { isLoading, error } = useSelector((state: RootState) => state.auth);
+const RegisterScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const dispatch = useDispatch<any>();
+  const { isLoading } = useSelector((state: RootState) => state.auth);
+
+  const [isDriver, setIsDriver] = useState<boolean>(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -74,58 +81,98 @@ const RegisterScreen = () => {
 
     try {
       console.log("🔄 Đang đăng ký tài khoản...");
-      console.log("Form data:", formData);
+      console.log("Form data:", { ...formData, isDriver });
 
-      const apiUrl = __DEV__
-        ? "http://192.168.20.27:3000/api/auth/register"
-        : "http://localhost:3000/api/auth/register";
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim(),
-          password: formData.password,
-        }),
-      });
+      // Build payload
+      const payload: any = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        password: formData.password,
+      };
+      if (isDriver) payload.role = "driver";
 
-      const result = await response.json();
+      // Cast response to any to avoid TS unknown errors
+      const res = (await apiService.post("/auth/register", payload)) as any;
 
-      if (response.ok) {
-        console.log("✅ Đăng ký thành công:", result);
-        Alert.alert(
-          "Đăng Ký Thành Công!",
-          "Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản.",
-          [
-            {
-              text: "Đăng Nhập Ngay",
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
-      } else {
-        console.error("❌ Lỗi đăng ký:", result);
-        let errorMessage = "Đăng ký thất bại. Vui lòng thử lại.";
+      if (res && res.status >= 200 && res.status < 300) {
+        console.log("✅ Đăng ký thành công:", res.data);
 
-        if (result.message) {
-          if (Array.isArray(result.message)) {
-            errorMessage = result.message.join("\n");
+        // Auto login
+        try {
+          const loginRes = (await apiService.post("/auth/login", {
+            email: payload.email,
+            password: payload.password,
+          })) as any;
+
+          const accessToken: string | undefined =
+            loginRes?.data?.accessToken ?? undefined;
+          const user: any = loginRes?.data?.user ?? null;
+
+          if (accessToken) {
+            await AsyncStorage.setItem("accessToken", accessToken);
+            if (user) {
+              await AsyncStorage.setItem("user", JSON.stringify(user));
+            }
+
+            // Update redux auth state (loadUser should read token/user from storage or call /auth/me)
+            try {
+              dispatch(loadUser());
+            } catch (e) {
+              console.warn("dispatch(loadUser) failed:", e);
+            }
+
+            Alert.alert(
+              "Đăng ký & Đăng nhập Thành Công",
+              "Bạn đã được đăng ký và đăng nhập vào ứng dụng.",
+              [
+                {
+                  text: "OK",
+                  onPress: () => navigation.navigate("Main" as any),
+                },
+              ]
+            );
+            return;
           } else {
-            errorMessage = result.message;
+            // No token returned — fall back
+            Alert.alert(
+              "Đăng ký thành công",
+              "Tài khoản đã được tạo. Vui lòng đăng nhập.",
+              [{ text: "Đăng Nhập", onPress: () => navigation.goBack() }]
+            );
+            return;
+          }
+        } catch (loginErr: unknown) {
+          const le = loginErr as any;
+          console.warn("Auto-login failed after register:", le);
+          Alert.alert(
+            "Đăng ký thành công",
+            "Tài khoản đã được tạo nhưng đăng nhập tự động thất bại. Vui lòng đăng nhập thủ công."
+          );
+          navigation.goBack();
+          return;
+        }
+      } else {
+        // non-2xx
+        const data = (res && res.data) as any;
+        console.error("❌ Lỗi đăng ký:", data);
+        let errorMessage = "Đăng ký thất bại. Vui lòng thử lại.";
+        if (data?.message) {
+          if (Array.isArray(data.message)) {
+            errorMessage = data.message.join("\n");
+          } else {
+            errorMessage = String(data.message);
           }
         }
-
         Alert.alert("Lỗi Đăng Ký", errorMessage);
       }
-    } catch (error: any) {
-      console.error("❌ Lỗi network:", error);
-      Alert.alert(
-        "Lỗi Kết Nối",
-        "Không thể kết nối đến máy chủ. Vui lòng kiểm tra internet và thử lại."
-      );
+    } catch (error: unknown) {
+      // narrow unknown to any before accessing properties
+      const err = error as any;
+      console.error("❌ Lỗi network or server:", err);
+      const serverMessage =
+        err?.response?.data?.message || err?.message || "Không thể kết nối đến máy chủ.";
+      Alert.alert("Lỗi Đăng Ký", String(serverMessage));
     }
   };
 
@@ -267,6 +314,23 @@ const RegisterScreen = () => {
               />
             </View>
 
+            {/* Register as driver toggle */}
+            <TouchableOpacity
+              style={styles.driverToggle}
+              onPress={() => setIsDriver((v) => !v)}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  { backgroundColor: isDriver ? "#0077be" : "#fff" },
+                ]}
+              >
+                {isDriver && <View style={styles.checkboxInner} />}
+              </View>
+              <Text style={styles.driverToggleText}>Đăng ký làm tài xế</Text>
+            </TouchableOpacity>
+
             {/* Register Button */}
             <TouchableOpacity
               style={styles.registerButton}
@@ -297,122 +361,30 @@ const RegisterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  header: {
-    alignItems: "center",
-    paddingTop: height * 0.05,
-    paddingBottom: height * 0.03,
-  },
-  logoContainer: {
-    width: width * 0.25,
-    height: width * 0.25,
-    borderRadius: width * 0.125,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  appTitle: {
-    fontSize: width * 0.06,
-    fontWeight: "bold",
-    color: "white",
-    marginTop: 5,
-  },
-  appSubtitle: {
-    fontSize: width * 0.035,
-    color: "white",
-    textAlign: "center",
-    marginTop: 2,
-  },
-  formContainer: {
-    flex: 1,
-    paddingHorizontal: width * 0.06,
-    paddingTop: height * 0.02,
-  },
-  welcomeText: {
-    fontSize: width * 0.06,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitleText: {
-    fontSize: width * 0.04,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: height * 0.04,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    minHeight: 56,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: width * 0.045,
-    color: "#333",
-    paddingVertical: 16,
-  },
-  registerButton: {
-    backgroundColor: "#0077be",
-    paddingVertical: 18,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  registerButtonText: {
-    color: "white",
-    fontSize: width * 0.05,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  footer: {
-    alignItems: "center",
-  },
-  loginContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  loginText: {
-    color: "#666",
-    fontSize: width * 0.04,
-  },
-  loginLink: {
-    color: "#0077be",
-    fontSize: width * 0.04,
-    fontWeight: "600",
-  },
+  /* ... keep the styles from your previous file ... */
+  container: { flex: 1, backgroundColor: "#f8f9fa" },
+  keyboardAvoidingView: { flex: 1 },
+  scrollContainer: { flexGrow: 1, paddingBottom: 20 },
+  header: { alignItems: "center", paddingTop: height * 0.05, paddingBottom: height * 0.03 },
+  logoContainer: { width: width * 0.25, height: width * 0.25, borderRadius: width * 0.125, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  appTitle: { fontSize: width * 0.06, fontWeight: "bold", color: "white", marginTop: 5 },
+  appSubtitle: { fontSize: width * 0.035, color: "white", textAlign: "center", marginTop: 2 },
+  formContainer: { flex: 1, paddingHorizontal: width * 0.06, paddingTop: height * 0.02 },
+  welcomeText: { fontSize: width * 0.06, fontWeight: "bold", color: "#333", textAlign: "center", marginBottom: 8 },
+  subtitleText: { fontSize: width * 0.04, color: "#666", textAlign: "center", marginBottom: height * 0.04 },
+  inputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 12, marginBottom: 16, paddingHorizontal: 16, paddingVertical: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, minHeight: 56 },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, fontSize: width * 0.045, color: "#333", paddingVertical: 16 },
+  driverToggle: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: "#999", alignItems: "center", justifyContent: "center", marginRight: 10 },
+  checkboxInner: { width: 12, height: 12, backgroundColor: "#fff", borderRadius: 2 },
+  driverToggleText: { fontSize: width * 0.045, color: "#333" },
+  registerButton: { backgroundColor: "#0077be", paddingVertical: 18, borderRadius: 12, marginTop: 8, marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  registerButtonText: { color: "white", fontSize: width * 0.05, fontWeight: "600", textAlign: "center" },
+  footer: { alignItems: "center" },
+  loginContainer: { flexDirection: "row", alignItems: "center" },
+  loginText: { color: "#666", fontSize: width * 0.04 },
+  loginLink: { color: "#0077be", fontSize: width * 0.04, fontWeight: "600" },
 });
 
 export default RegisterScreen;

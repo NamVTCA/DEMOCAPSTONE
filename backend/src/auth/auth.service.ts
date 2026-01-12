@@ -18,12 +18,27 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
-    const payload = { sub: user._id, email: user.email, roles: user.roles };
-    return {
-      accessToken: this.jwtService.sign(payload),
-    };
+async login(user: any) {
+  // `user` should already be sanitized by validateUser (password removed)
+  const payload = { sub: user._id, email: user.email, roles: user.roles };
+  const accessToken = this.jwtService.sign(payload);
+
+  // make sure we return sanitized user object (no password)
+  // If caller passed a Mongoose doc (result of validateUser), it may already be a plain object.
+  // Normalize to plain object:
+  const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+
+  // ensure password is removed just in case
+  if (userObj && userObj.password) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete (userObj as any).password;
   }
+
+  return {
+    accessToken,
+    user: userObj,
+  };
+}
 
   async register(name: string, email: string, password: string, role: string = 'user') {
     const existing = await this.usersService.findByEmail(email);
