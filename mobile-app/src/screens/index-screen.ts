@@ -17,3 +17,7 @@ export * from './profile/index-profile';
 
 // Common & Utility Screens
 export * from './common/index-common';
+
+// Driver Screens
+export { default as DriverHomeScreen } from './driver/DriverHomeScreen';
+export { default as DriverScannerScreen } from './driver/DriverScannerScreen';

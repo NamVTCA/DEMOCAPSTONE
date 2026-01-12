@@ -20,7 +20,10 @@ import {
   LoyaltyProgramScreen,
   BusTrackingScreen,
   DriveScreen,
+  DriverHomeScreen,
+  DriverScannerScreen,
 } from "../screens/index-screen";
+
 
 // Navigation
 import BottomTabNavigator from "./BottomTabNavigator";
@@ -44,6 +47,8 @@ type MainStackParamList = {
   Profile: undefined;
   LoyaltyProgram: undefined;
   BusTracking: { tripId?: string };
+  DriverHome: undefined;
+  DriverScanner: undefined;
 };
 
 type RootStackParamList = {
@@ -69,6 +74,9 @@ const MainStackNavigator = () => (
     <MainStack.Screen name="SearchTrips" component={SearchTripsScreen} />
     <MainStack.Screen name="TripDetails" component={TripDetailsScreen} />
     <MainStack.Screen name="Booking" component={BookingScreen} />
+    <MainStack.Screen name="DriverHome" component={DriverHomeScreen} />
+    <MainStack.Screen name="DriverScanner" component={DriverScannerScreen} />
+    
     <MainStack.Screen
       name="BookingCheckout"
       component={BookingCheckoutScreen}
