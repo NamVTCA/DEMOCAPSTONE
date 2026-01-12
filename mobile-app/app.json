@@ -11,6 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#3B82F6"
     },
+    "extra": {
+      "API_BASE_URL": "http://192.168.1.42:3000/api"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],

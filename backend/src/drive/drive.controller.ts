@@ -21,7 +21,7 @@ import * as path from 'path';
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-@Controller('api/users/drive')
+@Controller('users/drive')
 export class DriveController {
   constructor(private readonly db: DbService) {}
 

@@ -2,7 +2,7 @@ import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
 import { DbService } from '../db.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 
-@Controller('api/users')
+@Controller('users')
 export class UsersController {
   constructor(private readonly db: DbService) {}
 
