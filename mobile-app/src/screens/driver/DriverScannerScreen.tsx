@@ -1,10 +1,20 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
-import { Ionicons } from '@expo/vector-icons';
-import apiService from '../../services/common/apiService';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/index-store';
+// mobile-app/src/screens/driver/DriverScannerScreen.tsx
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import * as CameraModule from "expo-camera";
+import { useCameraPermissions } from "expo-camera";
+import { Ionicons } from "@expo/vector-icons";
+import apiService from "../../services/common/apiService";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/index-store";
 
 type TicketInfo = {
   id: string;
@@ -16,19 +26,43 @@ type TicketInfo = {
   extras?: any;
 };
 
+type ValidateResponse = {
+  ticket?: TicketInfo;
+  message?: string;
+  ok?: boolean;
+};
+
+// Resolve runtime Camera component (file scope)
+const ExpoCamera: React.ComponentType<any> | null =
+  ((CameraModule as any).Camera || (CameraModule as any).default || null);
+
 export default function DriverScannerScreen({ navigation }: any) {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  // Use the official hook for permissions
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+  // Local simple states
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState<TicketInfo | null>(null);
   const auth = useSelector((s: RootState) => s.auth);
 
+  // If permission value is null/undefined, show requesting UI while we call request
   useEffect(() => {
     (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
+      try {
+        // If already asked before, cameraPermission is not null; otherwise request
+        if (!cameraPermission) {
+          await requestCameraPermission();
+        }
+      } catch (e) {
+        console.warn("Camera permission request failed", e);
+      }
     })();
-  }, []);
+  }, [cameraPermission, requestCameraPermission]);
+
+  // Helper to know granted status
+  const permissionGranted = cameraPermission?.granted ?? false;
+  const permissionUndetermined = cameraPermission == null;
 
   const resetScanner = () => {
     setScanned(false);
@@ -36,106 +70,110 @@ export default function DriverScannerScreen({ navigation }: any) {
     setLoading(false);
   };
 
-type ValidateResponse = {
-  ticket?: TicketInfo;
-  message?: string;
-  ok?: boolean;
-};
-
-const handleValidateTicket = useCallback(
-  async (ticketId: string) => {
+  const handleValidateTicket = useCallback(async (ticketId: string) => {
     try {
       setLoading(true);
-      // <-- dùng generic để TS biết res.data có shape ValidateResponse
-      const res = await apiService.post<ValidateResponse>('/drivers/validate', { ticketId });
+      const res = await apiService.post<ValidateResponse>("/drivers/validate", {
+        ticketId,
+      });
       const data = res.data;
-
-      // Kiểm tra an toàn
-      if (data && typeof data === 'object') {
+      if (data && typeof data === "object") {
         if (data.ticket) {
           setTicket(data.ticket);
         } else {
-          Alert.alert('Không hợp lệ', data.message ?? 'Không tìm thấy vé');
+          Alert.alert("Không hợp lệ", data.message ?? "Không tìm thấy vé");
         }
       } else {
-        // unexpected shape
-        console.warn('Unexpected validate response shape:', data);
-        Alert.alert('Lỗi', 'Phản hồi không hợp lệ từ máy chủ');
+        console.warn("Unexpected validate response shape:", data);
+        Alert.alert("Lỗi", "Phản hồi không hợp lệ từ máy chủ");
       }
     } catch (err: unknown) {
-      console.error('Validate error', err);
-      // safe extract error message
+      console.error("Validate error", err);
       const axiosErr = err as any;
       const errData = axiosErr?.response?.data;
       const message =
-        (errData && (errData.message || errData.msg || (typeof errData === 'string' && errData))) ||
+        (errData &&
+          (errData.message ||
+            errData.msg ||
+            (typeof errData === "string" && errData))) ||
         axiosErr?.message ||
-        'Không thể xác thực vé';
-      Alert.alert('Lỗi', message);
+        "Không thể xác thực vé";
+      Alert.alert("Lỗi", message);
     } finally {
       setLoading(false);
     }
-  },
-  []
-);
+  }, []);
 
   const onBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     if (scanned) return;
     setScanned(true);
 
-    // Usually QR payload could be JSON or plain ticketId. Try parse.
+    // QR payload could be JSON or plain id
     let ticketId = data;
     try {
       const parsed = JSON.parse(data);
-      // parsed could be { ticketId: '...' } or booking info
-      if (parsed.ticketId) ticketId = parsed.ticketId;
-      else if (parsed.id) ticketId = parsed.id;
-      // else leave as raw data
+      if (parsed?.ticketId) ticketId = parsed.ticketId;
+      else if (parsed?.id) ticketId = parsed.id;
     } catch {
-      // not JSON -> treat as raw id
+      // not JSON
     }
 
     handleValidateTicket(ticketId);
   };
 
-const confirmUseTicket = async () => {
-  if (!ticket) return;
-  try {
-    setLoading(true);
-    // khai báo kiểu trả về nếu backend trả { ok: boolean, message?: string }
-    const res = await apiService.post<{ ok?: boolean; message?: string }>('/drivers/confirm-ticket', { ticketId: ticket.id });
-    const data = res.data;
-
-    if (data && data.ok) {
-      Alert.alert('Thành công', 'Xác nhận vé thành công');
-      resetScanner();
-    } else {
-      Alert.alert('Lỗi', data?.message ?? 'Xác nhận thất bại');
+  const confirmUseTicket = async () => {
+    if (!ticket) return;
+    try {
+      setLoading(true);
+      const res = await apiService.post<{ ok?: boolean; message?: string }>(
+        "/drivers/confirm-ticket",
+        {
+          ticketId: ticket.id,
+        }
+      );
+      const data = res.data;
+      if (data && data.ok) {
+        Alert.alert("Thành công", "Xác nhận vé thành công");
+        resetScanner();
+      } else {
+        Alert.alert("Lỗi", data?.message ?? "Xác nhận thất bại");
+      }
+    } catch (err: unknown) {
+      console.error("Confirm error", err);
+      const axiosErr = err as any;
+      const errData = axiosErr?.response?.data;
+      const message =
+        (errData &&
+          (errData.message ||
+            errData.msg ||
+            (typeof errData === "string" && errData))) ||
+        axiosErr?.message ||
+        "Xác nhận thất bại";
+      Alert.alert("Lỗi", message);
+    } finally {
+      setLoading(false);
     }
-  } catch (err: unknown) {
-    console.error('Confirm error', err);
-    const axiosErr = err as any;
-    const errData = axiosErr?.response?.data;
-    const message =
-      (errData && (errData.message || errData.msg || (typeof errData === 'string' && errData))) ||
-      axiosErr?.message ||
-      'Xác nhận thất bại';
-    Alert.alert('Lỗi', message);
-  } finally {
-    setLoading(false);
-  }
-};
-  if (hasPermission === null) {
+  };
+
+  // Permission UI handling
+  if (permissionUndetermined) {
     return (
       <View style={styles.center}>
         <Text>Đang yêu cầu quyền camera...</Text>
       </View>
     );
   }
-  if (hasPermission === false) {
+
+  if (!permissionGranted) {
     return (
       <View style={styles.center}>
         <Text>Không có quyền camera. Vui lòng cấp quyền trong cài đặt.</Text>
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 12 }]}
+          onPress={() => requestCameraPermission()}
+        >
+          <Text style={styles.buttonText}>Yêu cầu quyền</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -145,10 +183,22 @@ const confirmUseTicket = async () => {
       {!ticket ? (
         <>
           <View style={styles.scannerContainer}>
-            <BarCodeScanner
-              onBarCodeScanned={onBarCodeScanned}
-              style={StyleSheet.absoluteFillObject}
-            />
+            {/* If ExpoCamera is available at runtime, render it. Otherwise show fallback message */}
+            {ExpoCamera ? (
+              <ExpoCamera
+                style={StyleSheet.absoluteFillObject}
+                onBarCodeScanned={scanned ? undefined : onBarCodeScanned}
+                ratio="16:9"
+              />
+            ) : (
+              <View style={[styles.center, { flex: 1 }]}>
+                <Text style={{ marginBottom: 8 }}>Module camera chưa sẵn sàng.</Text>
+                <Text style={{ textAlign: "center", color: "#666" }}>
+                  Hãy mở ứng dụng bằng Expo Go (hoặc rebuild dev client nếu dùng custom client).
+                </Text>
+              </View>
+            )}
+
             <View style={styles.scanOverlay}>
               <Ionicons name="scan-outline" size={36} color="#fff" />
               <Text style={styles.scanText}>Quét mã vé</Text>
@@ -175,7 +225,7 @@ const confirmUseTicket = async () => {
           {ticket.seat && <Text style={styles.field}>Ghế: {ticket.seat}</Text>}
           {ticket.status && <Text style={styles.field}>Trạng thái: {ticket.status}</Text>}
 
-          <View style={{ flexDirection: 'row', marginTop: 16 }}>
+          <View style={{ flexDirection: "row", marginTop: 16 }}>
             <TouchableOpacity style={[styles.button, { marginRight: 8 }]} onPress={confirmUseTicket}>
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Xác nhận</Text>}
             </TouchableOpacity>
@@ -190,22 +240,22 @@ const confirmUseTicket = async () => {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scannerContainer: { flex: 1, overflow: 'hidden', borderRadius: 8 },
+  container: { flex: 1, backgroundColor: "#fff" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  scannerContainer: { flex: 1, overflow: "hidden", borderRadius: 8 },
   scanOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  scanText: { color: '#fff', marginTop: 8, fontWeight: '600' },
-  controls: { padding: 16, flexDirection: 'row', justifyContent: 'center' },
-  button: { backgroundColor: '#1976d2', padding: 12, borderRadius: 8 },
-  cancel: { backgroundColor: '#999' },
-  buttonText: { color: '#fff', fontWeight: '600' },
+  scanText: { color: "#fff", marginTop: 8, fontWeight: "600" },
+  controls: { padding: 16, flexDirection: "row", justifyContent: "center" },
+  button: { backgroundColor: "#1976d2", padding: 12, borderRadius: 8 },
+  cancel: { backgroundColor: "#999" },
+  buttonText: { color: "#fff", fontWeight: "600" },
   result: { padding: 16 },
-  resultTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  resultTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
   field: { fontSize: 16, marginTop: 6 },
 });

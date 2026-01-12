@@ -4,7 +4,14 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { View, StyleSheet, Platform, Text, Pressable, Vibration } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Platform,
+  Text,
+  Pressable,
+  Vibration,
+} from "react-native";
 import * as Haptics from "expo-haptics";
 import { RootState } from "../store/index-store";
 
@@ -55,7 +62,9 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
           // Haptic feedback: use expo-haptics if available, otherwise fallback to Vibration
           try {
             if (Platform.OS !== "web" && Haptics && Haptics.impactAsync) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+                () => {}
+              );
             } else {
               Vibration.vibrate(10);
             }
@@ -98,7 +107,11 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
             android_ripple={{ color: "#e3f2fd", borderless: false }}
             style={[styles.tabItem, isFocused && styles.tabItemActive]}
           >
-            <Ionicons name={iconName} size={26} color={isFocused ? activeColor : inactiveColor} />
+            <Ionicons
+              name={iconName}
+              size={26}
+              color={isFocused ? activeColor : inactiveColor}
+            />
             {isFocused && (
               <View style={styles.labelContainer}>
                 <Text style={[styles.label, { color: activeColor }]}>
@@ -130,16 +143,6 @@ const BottomTabNavigator = () => {
         tabBarHideOnKeyboard: true,
       }}
     >
-      {isDriver && (
-        <Tab.Screen
-          name="Driver"
-          component={DriverHomeScreen}
-          options={{
-            tabBarLabel: "Tài xế",
-          }}
-        />
-      )}
-
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -175,6 +178,15 @@ const BottomTabNavigator = () => {
           tabBarLabel: "Hồ sơ",
         }}
       />
+      {isDriver && (
+        <Tab.Screen
+          name="Driver"
+          component={DriverHomeScreen}
+          options={{
+            tabBarLabel: "Tài xế",
+          }}
+        />
+      )}
     </Tab.Navigator>
   );
 };

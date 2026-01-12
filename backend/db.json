@@ -7,7 +7,7 @@
       "phone": "0123456789",
       "avatar": null,
       "roles": [
-        "user"
+        "user", "driver"
       ],
       "passwordHash": "$2a$08$o9mtGes73BbPUTr7ADLKYe7r8n5dO/STYcCO1twaE49em9Wd3aw8a",
       "createdAt": "2026-01-12T10:23:19.870Z",
