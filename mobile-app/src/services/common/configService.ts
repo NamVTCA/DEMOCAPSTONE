@@ -69,13 +69,13 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: "/users/change-password",
     UPLOAD_AVATAR: "/users/avatar",
   },
-  
+
   // User Drive (new)
   DRIVE: {
     LIST: "/users/drive", // GET -> list files
-    UPLOAD: "/users/drive/upload", // POST -> upload file (multipart/form-data, key: "file")
+    UPLOAD: "/users/drive/upload", // POST -> upload file (multipart form-data, key: "file")
     DELETE: "/users/drive/:id", // DELETE -> delete file by id
-    DOWNLOAD: "/users/drive/:id/download", // optional: direct download
+    DOWNLOAD: "/users/drive/:id/download", // optional
   },
 
   // Locations
