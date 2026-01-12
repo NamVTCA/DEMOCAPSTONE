@@ -10,6 +10,11 @@ class ApiService {
 
   constructor() {
     this.baseURL = this.getBaseURL();
+      // DEBUG: in ra để kiểm tra runtime giá trị
+  // eslint-disable-next-line no-console
+  console.log('DEBUG apiService Constants.expoConfig =', Constants.expoConfig);
+  // eslint-disable-next-line no-console
+  console.log('DEBUG apiService resolved baseURL =', this.baseURL);
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,
