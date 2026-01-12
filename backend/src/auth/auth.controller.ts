@@ -1,29 +1,26 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Response } from 'express';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() body: any, @Res() res: Response) {
-    try {
-      const result = await this.auth.register(body);
-      return res.json(result);
-    } catch (e) {
-      return res.status(400).json({ message: e.message || 'Error' });
-    }
+  async register(@Body() dto: RegisterDto) {
+    const user = await this.authService.register(dto.name, dto.email, dto.password, dto.role || 'user');
+    const { password, ...rest } = user.toObject();
+    return rest;
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() body: any, @Res() res: Response) {
-    try {
-      const { email, password } = body;
-      const result = await this.auth.login(email, password);
-      return res.json(result);
-    } catch (e) {
-      return res.status(401).json({ message: e.message || 'Invalid credentials' });
+  async login(@Body() dto: LoginDto) {
+    const validated = await this.authService.validateUser(dto.email, dto.password);
+    if (!validated) {
+      return { message: 'Invalid credentials' };
     }
+    return this.authService.login(validated);
   }
 }

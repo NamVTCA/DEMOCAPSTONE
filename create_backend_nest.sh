@@ -1,544 +1,701 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-# Script tạo backend NestJS minimal cho DEMOCAPSTONE
-# Usage: ./create_backend_nest.sh
+# Script tạo backend NestJS + MongoDB
+ROOT_DIR="$(pwd)"
+BACKEND_DIR="${ROOT_DIR}/backend"
 
-ROOT="$(pwd)"
-BACKEND_DIR="$ROOT/backend"
+if [ -d "${BACKEND_DIR}" ]; then
+  echo "Error: ${BACKEND_DIR} already exists. Remove it or choose another location."
+  exit 1
+fi
 
-echo "Create backend folder: $BACKEND_DIR"
-mkdir -p "$BACKEND_DIR"
+mkdir -p "${BACKEND_DIR}"
+cd "${BACKEND_DIR}"
 
-cat > "$BACKEND_DIR/package.json" <<'EOF'
+echo "Creating backend scaffold in ${BACKEND_DIR} ..."
+
+# package.json
+cat > package.json <<'JSON'
 {
-  "name": "vexe-backend-nest",
+  "name": "vexe-backend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "ts-node -r tsconfig-paths/register src/main.ts",
-    "start:dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules src/main.ts"
+    "start": "node dist/main.js",
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
+    "lint": "eslint . --ext .ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
-    "@nestjs/platform-express": "^10.0.0",
     "@nestjs/jwt": "^10.0.0",
-    "bcryptjs": "^2.4.3",
-    "express": "^4.18.2",
-    "multer": "^1.4.5-lts.1",
+    "@nestjs/mongoose": "^10.0.0",
+    "@nestjs/passport": "^10.0.0",
+    "bcrypt": "^5.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "mongoose": "^7.0.0",
+    "passport": "^0.6.0",
+    "passport-jwt": "^4.0.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1",
-    "uuid": "^9.0.0"
+    "rxjs": "^7.5.0",
+    "dotenv": "^16.0.0"
   },
   "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "@types/bcrypt": "^5.0.0",
+    "@types/node": "^18.0.0",
     "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.1.6"
+    "typescript": "^5.0.0",
+    "tsconfig-paths": "^4.2.0"
   }
 }
-EOF
+JSON
 
-cat > "$BACKEND_DIR/tsconfig.json" <<'EOF'
+# tsconfig.json
+cat > tsconfig.json <<'TS'
 {
   "compilerOptions": {
     "module": "commonjs",
-    "declaration": false,
+    "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "target": "es2019",
+    "allowSyntheticDefaultImports": true,
+    "target": "es2021",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "*": ["node_modules/*"]
+    }
   },
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-EOF
+TS
 
-mkdir -p "$BACKEND_DIR/src"
-mkdir -p "$BACKEND_DIR/src/auth"
-mkdir -p "$BACKEND_DIR/src/users"
-mkdir -p "$BACKEND_DIR/src/drive"
+# nest-cli.json
+cat > nest-cli.json <<'NC'
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src"
+}
+NC
 
-cat > "$BACKEND_DIR/src/main.ts" <<'EOF'
+# .env.example
+cat > .env.example <<'ENV'
+PORT=3000
+MONGO_URI=mongodb://mongo:27017/vexe
+JWT_SECRET=replace_with_a_strong_secret
+JWT_EXPIRES_IN=3600s
+ENV
+
+# docker-compose.yml
+cat > docker-compose.yml <<'DC'
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: vexe-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+DC
+
+# create src dirs
+mkdir -p src/{auth,users,drivers,tickets,common}
+mkdir -p src/users/schemas
+mkdir -p src/tickets/schemas
+mkdir -p src/auth/dto
+mkdir -p src/drivers/dto
+
+# main.ts
+cat > src/main.ts <<'MAIN'
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as express from 'express';
-import { join } from 'path';
+import { ValidationPipe } from '@nestjs/common';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  dotenv.config();
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  app.setGlobalPrefix('api');
-
-  // serve uploads folder (static)
-  const uploadsPath = join(process.cwd(), 'uploads');
-  app.use('/uploads', express.static(uploadsPath));
-
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Backend (NestJS) running at http://localhost:${port}/api`);
-  console.log(`Uploads served at http://localhost:${port}/uploads/...`);
+  console.log(`API is running on http://localhost:${port}`);
 }
 bootstrap();
-EOF
+MAIN
 
-cat > "$BACKEND_DIR/src/app.module.ts" <<'EOF'
+# app.module.ts
+cat > src/app.module.ts <<'APP'
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { DriveModule } from './drive/drive.module';
-import { DbService } from './db.service';
+import { DriversModule } from './drivers/drivers.module';
+import { TicketsModule } from './tickets/tickets.module';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 @Module({
   imports: [
-    JwtModule.register({
-      global: true,
-      secret: process.env.JWT_SECRET || 'replace_this_secret',
-      signOptions: { expiresIn: '7d' },
-    }),
+    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/vexe'),
     AuthModule,
     UsersModule,
-    DriveModule,
+    DriversModule,
+    TicketsModule,
   ],
-  providers: [DbService],
 })
 export class AppModule {}
-EOF
+APP
 
-cat > "$BACKEND_DIR/src/db.service.ts" <<'EOF'
-import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+# seed.ts
+cat > src/seed.ts <<'SEED'
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { UsersService } from './users/users.service';
+import { TicketsService } from './tickets/tickets.service';
+import * as dotenv from 'dotenv';
 
-const DB_FILE = path.join(process.cwd(), 'db.json');
+async function bootstrap() {
+  dotenv.config();
+  const app = await NestFactory.createApplicationContext(AppModule);
+  const users = app.get(UsersService);
+  const tickets = app.get(TicketsService);
 
-interface UserRecord {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  avatar?: string | null;
-  roles?: string[];
-  passwordHash: string;
-  createdAt: string;
-  updatedAt: string;
+  // create driver if not exists
+  const driverEmail = 'driver@example.com';
+  const existing = await users.findByEmail(driverEmail);
+  if (!existing) {
+    await users.createUser('Tài xế 1', driverEmail, 'password123', ['driver']);
+    console.log('Driver created: driver@example.com / password123');
+  } else {
+    console.log('Driver already exists');
+  }
+
+  // create sample tickets
+  const sample = [
+    { ticketId: 'TCK-0001', bookingId: 'BKG-1', passengerName: 'Nguyễn A', seat: '1A', tripId: 'TRIP-1' },
+    { ticketId: 'TCK-0002', bookingId: 'BKG-2', passengerName: 'Trần B', seat: '2B', tripId: 'TRIP-1' },
+  ];
+
+  for (const s of sample) {
+    const t = await tickets.findByTicketId(s.ticketId);
+    if (!t) {
+      await tickets.createTicket(s);
+      console.log('Created ticket', s.ticketId);
+    } else {
+      console.log('Ticket exists', s.ticketId);
+    }
+  }
+
+  await app.close();
+  process.exit(0);
 }
 
-interface FileRecord {
-  id: string;
-  userId: string;
-  name: string;
-  mimeType?: string;
-  size?: number;
-  filename: string;
-  url: string;
-  uploadedAt: string;
-}
+bootstrap();
+SEED
+
+# common/roles.decorator.ts
+cat > src/common/roles.decorator.ts <<'RD'
+import { SetMetadata } from '@nestjs/common';
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+RD
+
+# common/roles.guard.ts
+cat > src/common/roles.guard.ts <<'RG'
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from './roles.decorator';
 
 @Injectable()
-export class DbService {
-  private data: { users: UserRecord[]; files: FileRecord[] } = { users: [], files: [] };
-
-  constructor() {
-    this.ensureDbFile();
-    this.load();
-    this.ensureDemoUser();
-  }
-
-  private ensureDbFile() {
-    if (!fs.existsSync(DB_FILE)) {
-      fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], files: [] }, null, 2));
-    }
-  }
-
-  private load() {
-    try {
-      const raw = fs.readFileSync(DB_FILE, 'utf8');
-      this.data = JSON.parse(raw);
-    } catch (e) {
-      console.error('Error loading DB file:', e);
-      this.data = { users: [], files: [] };
-    }
-  }
-
-  private save() {
-    fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2));
-  }
-
-  private ensureDemoUser() {
-    if (!this.data.users || this.data.users.length === 0) {
-      const pwd = 'password123';
-      const hash = bcrypt.hashSync(pwd, 8);
-      const demo: UserRecord = {
-        id: uuidv4(),
-        name: 'Demo User',
-        email: 'user@example.com',
-        phone: '0123456789',
-        avatar: null,
-        roles: ['user'],
-        passwordHash: hash,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      this.data.users = [demo];
-      this.save();
-      console.log(`Created demo user: email=user@example.com password=${pwd}`);
-    }
-  }
-
-  // Users
-  findUserByEmail(email: string) {
-    return this.data.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  }
-
-  findUserById(id: string) {
-    return this.data.users.find((u) => u.id === id);
-  }
-
-  createUser(payload: { name?: string; email: string; phone?: string; passwordHash: string }) {
-    const user = {
-      id: uuidv4(),
-      name: payload.name || 'User',
-      email: payload.email,
-      phone: payload.phone || '',
-      avatar: null,
-      roles: ['user'],
-      passwordHash: payload.passwordHash,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    this.data.users.push(user);
-    this.save();
-    return user;
-  }
-
-  updateUser(id: string, patch: Partial<Omit<UserRecord, 'id' | 'passwordHash'>>) {
-    const idx = this.data.users.findIndex((u) => u.id === id);
-    if (idx === -1) return null;
-    this.data.users[idx] = { ...this.data.users[idx], ...patch, updatedAt: new Date().toISOString() };
-    this.save();
-    const { passwordHash, ...rest } = this.data.users[idx];
-    return rest;
-  }
-
-  // Files
-  getFilesByUser(userId: string) {
-    return this.data.files.filter((f) => f.userId === userId);
-  }
-
-  addFile(record: Omit<FileRecord, 'id' | 'uploadedAt'>) {
-    const r = {
-      id: uuidv4(),
-      ...record,
-      uploadedAt: new Date().toISOString(),
-    };
-    this.data.files.push(r);
-    this.save();
-    return r;
-  }
-
-  removeFileByIdForUser(fileId: string, userId: string) {
-    const idx = this.data.files.findIndex((f) => f.id === fileId && f.userId === userId);
-    if (idx === -1) return null;
-    const removed = this.data.files.splice(idx, 1)[0];
-    this.save();
-    return removed;
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+  canActivate(context: ExecutionContext): boolean {
+    const required = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!required || required.length === 0) return true;
+    const req = context.switchToHttp().getRequest();
+    const user = req.user;
+    if (!user || !user.roles) return false;
+    return required.some((r) => user.roles.includes(r));
   }
 }
-EOF
+RG
 
-# Auth module & files
-cat > "$BACKEND_DIR/src/auth/auth.module.ts" <<'EOF'
+#
+# USERS
+#
+cat > src/users/schemas/user.schema.ts <<'US'
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type UserDocument = User & Document;
+
+@Schema({ timestamps: true })
+export class User {
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ required: true, unique: true })
+  email: string;
+
+  @Prop({ required: true })
+  password: string;
+
+  @Prop({ default: ['user'] })
+  roles: string[];
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
+US
+
+cat > src/users/users.module.ts <<'UM'
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { DbService } from '../db.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from './schemas/user.schema';
+import { UsersService } from './users.service';
 
 @Module({
-  imports: [JwtModule.register({})],
-  providers: [AuthService, DbService],
-  controllers: [AuthController],
+  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])],
+  providers: [UsersService],
+  exports: [UsersService],
 })
-export class AuthModule {}
-EOF
+export class UsersModule {}
+UM
 
-cat > "$BACKEND_DIR/src/auth/auth.service.ts" <<'EOF'
+cat > src/users/users.service.ts <<'USV'
 import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './schemas/user.schema';
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class UsersService {
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+
+  async createUser(name: string, email: string, password: string, roles: string[] = ['user']) {
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+    const created = new this.userModel({ name, email, password: hash, roles });
+    return created.save();
+  }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  async findById(id: string) {
+    return this.userModel.findById(id).exec();
+  }
+}
+USV
+
+#
+# AUTH
+#
+cat > src/auth/dto/register.dto.ts <<'RD'
+import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
+
+export class RegisterDto {
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+
+  @IsOptional()
+  @IsIn(['user', 'driver'])
+  role?: string;
+}
+RD
+
+cat > src/auth/dto/login.dto.ts <<'LD'
+import { IsEmail, IsString } from 'class-validator';
+
+export class LoginDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  password: string;
+}
+LD
+
+cat > src/auth/auth.service.ts <<'AS'
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { DbService } from '../db.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly db: DbService, private readonly jwtService: JwtService) {}
+  constructor(private usersService: UsersService, private jwtService: JwtService) {}
 
-  async register(payload: { name?: string; email: string; password: string; phone?: string }) {
-    const exist = this.db.findUserByEmail(payload.email);
-    if (exist) throw new Error('Email already in use');
-    const passwordHash = bcrypt.hashSync(payload.password, 8);
-    const user = this.db.createUser({ name: payload.name, email: payload.email, phone: payload.phone, passwordHash });
-    const { passwordHash: ph, ...userSafe } = user as any;
-    const token = this.signToken(userSafe);
-    return { user: userSafe, accessToken: token };
+  async validateUser(email: string, pass: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) return null;
+    const match = await bcrypt.compare(pass, user.password);
+    if (match) {
+      const { password, ...result } = user.toObject();
+      return result;
+    }
+    return null;
   }
 
-  async login(email: string, password: string) {
-    const user = this.db.findUserByEmail(email);
-    if (!user) throw new Error('Invalid credentials');
-    const ok = bcrypt.compareSync(password, user.passwordHash);
-    if (!ok) throw new Error('Invalid credentials');
-    const { passwordHash, ...userSafe } = user as any;
-    const token = this.signToken(userSafe);
-    return { user: userSafe, accessToken: token };
+  async login(user: any) {
+    const payload = { sub: user._id, email: user.email, roles: user.roles };
+    return {
+      accessToken: this.jwtService.sign(payload),
+    };
   }
 
-  signToken(user: any) {
-    const payload = { id: user.id, email: user.email, roles: user.roles || [] };
-    return this.jwtService.sign(payload, { secret: process.env.JWT_SECRET || 'replace_this_secret', expiresIn: '7d' });
+  async register(name: string, email: string, password: string, role: string = 'user') {
+    const existing = await this.usersService.findByEmail(email);
+    if (existing) {
+      throw new UnauthorizedException('Email already exists');
+    }
+    const user = await this.usersService.createUser(name, email, password, [role]);
+    return user;
   }
 }
-EOF
+AS
 
-cat > "$BACKEND_DIR/src/auth/auth.controller.ts" <<'EOF'
-import { Body, Controller, Post, Res } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { Response } from 'express';
+cat > src/auth/jwt.strategy.ts <<'JS'
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, ExtractJwt } from 'passport-jwt';
+import * as dotenv from 'dotenv';
 
-@Controller('api/auth')
-export class AuthController {
-  constructor(private readonly auth: AuthService) {}
-
-  @Post('register')
-  async register(@Body() body: any, @Res() res: Response) {
-    try {
-      const result = await this.auth.register(body);
-      return res.json(result);
-    } catch (e) {
-      return res.status(400).json({ message: e.message || 'Error' });
-    }
-  }
-
-  @Post('login')
-  async login(@Body() body: any, @Res() res: Response) {
-    try {
-      const { email, password } = body;
-      const result = await this.auth.login(email, password);
-      return res.json(result);
-    } catch (e) {
-      return res.status(401).json({ message: e.message || 'Invalid credentials' });
-    }
-  }
-}
-EOF
-
-cat > "$BACKEND_DIR/src/auth/jwt.guard.ts" <<'EOF'
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+dotenv.config();
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: process.env.JWT_SECRET || 'replace_with_secret',
+    });
+  }
 
-  canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest();
-    const auth = req.headers['authorization'];
-    if (!auth || typeof auth !== 'string' || !auth.startsWith('Bearer ')) return false;
-    const token = auth.slice(7);
-    try {
-      const payload = this.jwtService.verify(token, { secret: process.env.JWT_SECRET || 'replace_this_secret' });
-      req.user = payload;
-      return true;
-    } catch (e) {
-      return false;
-    }
+  async validate(payload: any) {
+    return { userId: payload.sub, email: payload.email, roles: payload.roles };
   }
 }
-EOF
+JS
 
-# Users module
-cat > "$BACKEND_DIR/src/users/users.module.ts" <<'EOF'
-import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { DbService } from '../db.service';
+cat > src/auth/jwt-auth.guard.ts <<'JG'
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 
-@Module({
-  controllers: [UsersController],
-  providers: [DbService],
-})
-export class UsersModule {}
-EOF
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+JG
 
-cat > "$BACKEND_DIR/src/users/users.controller.ts" <<'EOF'
-import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
-import { DbService } from '../db.service';
-import { JwtAuthGuard } from '../auth/jwt.guard';
+cat > src/auth/auth.controller.ts <<'AC'
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
-@Controller('api/users')
-export class UsersController {
-  constructor(private readonly db: DbService) {}
+@Controller('auth')
+export class AuthController {
+  constructor(private authService: AuthService) {}
 
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  getProfile(@Req() req: any) {
-    const user = this.db.findUserById(req.user.id);
-    if (!user) return { message: 'User not found' };
-    const { passwordHash, ...rest } = user as any;
+  @Post('register')
+  async register(@Body() dto: RegisterDto) {
+    const user = await this.authService.register(dto.name, dto.email, dto.password, dto.role || 'user');
+    const { password, ...rest } = user.toObject();
     return rest;
   }
 
-  @Put('profile')
-  @UseGuards(JwtAuthGuard)
-  updateProfile(@Req() req: any, @Body() body: any) {
-    const updated = this.db.updateUser(req.user.id, {
-      name: body.name,
-      phone: body.phone,
-      avatar: body.avatar,
-    } as any);
-    return updated || { message: 'Not found' };
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  async login(@Body() dto: LoginDto) {
+    const validated = await this.authService.validateUser(dto.email, dto.password);
+    if (!validated) {
+      return { message: 'Invalid credentials' };
+    }
+    return this.authService.login(validated);
   }
 }
-EOF
+AC
 
-# Drive module & controller
-cat > "$BACKEND_DIR/src/drive/drive.module.ts" <<'EOF'
+cat > src/auth/auth.module.ts <<'AM'
 import { Module } from '@nestjs/common';
-import { DriveController } from './drive.controller';
-import { DbService } from '../db.service';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { UsersModule } from '../users/users.module';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
-  controllers: [DriveController],
-  providers: [DbService],
-})
-export class DriveModule {}
-EOF
-
-cat > "$BACKEND_DIR/src/drive/drive.controller.ts" <<'EOF'
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  Req,
-  UseGuards,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/jwt.guard';
-import { DbService } from '../db.service';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
-import * as path from 'path';
-
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-@Controller('api/users/drive')
-export class DriveController {
-  constructor(private readonly db: DbService) {}
-
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  list(@Req() req: any) {
-    const files = this.db.getFilesByUser(req.user.id);
-    return { files };
-  }
-
-  @Post('upload')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: UPLOAD_DIR,
-        filename: (req, file, cb) => {
-          const ext = extname(file.originalname) || '';
-          const name = uuidv4() + ext;
-          cb(null, name);
-        },
-      }),
-      limits: { fileSize: 50 * 1024 * 1024 },
+  imports: [
+    UsersModule,
+    PassportModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'replace_with_secret',
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '3600s' },
     }),
-  )
-  async upload(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-    if (!file) {
-      return { message: 'No file uploaded' };
-    }
-    const url = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-    const rec = this.db.addFile({
-      userId: req.user.id,
-      name: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      filename: file.filename,
-      url,
-    } as any);
-    return { file: rec };
+  ],
+  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController],
+  exports: [AuthService],
+})
+export class AuthModule {}
+AM
+
+#
+# TICKETS
+#
+cat > src/tickets/schemas/ticket.schema.ts <<'TS'
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type TicketDocument = Ticket & Document;
+
+@Schema({ timestamps: true })
+export class Ticket {
+  @Prop({ required: true, unique: true })
+  ticketId: string;
+
+  @Prop()
+  bookingId?: string;
+
+  @Prop()
+  passengerName?: string;
+
+  @Prop()
+  seat?: string;
+
+  @Prop()
+  tripId?: string;
+
+  @Prop({ default: 'unused' })
+  status?: string;
+
+  @Prop({ type: Object, default: {} })
+  extras?: any;
+}
+
+export const TicketSchema = SchemaFactory.createForClass(Ticket);
+TS
+
+cat > src/tickets/tickets.module.ts <<'TM'
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Ticket, TicketSchema } from './schemas/ticket.schema';
+import { TicketsService } from './tickets.service';
+
+@Module({
+  imports: [MongooseModule.forFeature([{ name: Ticket.name, schema: TicketSchema }])],
+  providers: [TicketsService],
+  exports: [TicketsService],
+})
+export class TicketsModule {}
+TM
+
+cat > src/tickets/tickets.service.ts <<'TSV'
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Ticket, TicketDocument } from './schemas/ticket.schema';
+
+@Injectable()
+export class TicketsService {
+  constructor(@InjectModel(Ticket.name) private ticketModel: Model<TicketDocument>) {}
+
+  async findByTicketId(ticketId: string) {
+    return this.ticketModel.findOne({ ticketId }).exec();
   }
 
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  async delete(@Param('id') id: string, @Req() req: any) {
-    const removed = this.db.removeFileByIdForUser(id, req.user.id);
-    if (!removed) return { message: 'File not found' };
-    // delete physical file if exists
-    const filepath = path.join(UPLOAD_DIR, removed.filename);
-    try {
-      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-    } catch (e) {
-      console.warn('Failed to unlink file', e);
-    }
-    return { ok: true };
+  async createTicket(payload: Partial<Ticket>) {
+    const doc = new this.ticketModel(payload);
+    return doc.save();
+  }
+
+  async confirmTicket(ticketId: string) {
+    const ticket = await this.findByTicketId(ticketId);
+    if (!ticket) return null;
+    ticket.status = 'used';
+    await ticket.save();
+    return ticket;
   }
 }
-EOF
+TSV
 
-# DB initial file
-cat > "$BACKEND_DIR/db.json" <<'EOF'
-{
-  "users": [],
-  "files": []
+#
+# DRIVERS
+#
+cat > src/drivers/dto/validate-ticket.dto.ts <<'VD'
+import { IsString } from 'class-validator';
+
+export class ValidateTicketDto {
+  @IsString()
+  ticketId: string;
 }
-EOF
+VD
 
-cat > "$BACKEND_DIR/.gitignore" <<'EOF'
-node_modules/
-uploads/
-dist/
-.env
-EOF
+cat > src/drivers/dto/confirm-ticket.dto.ts <<'CD'
+import { IsString } from 'class-validator';
 
-cat > "$BACKEND_DIR/README.md" <<'EOF'
-NestJS demo backend for DEMOCAPSTONE.
+export class ConfirmTicketDto {
+  @IsString()
+  ticketId: string;
+}
+CD
 
-Install & run:
-cd backend
+cat > src/drivers/drivers.service.ts <<'DS'
+import { Injectable } from '@nestjs/common';
+import { TicketsService } from '../tickets/tickets.service';
+
+@Injectable()
+export class DriversService {
+  constructor(private ticketsService: TicketsService) {}
+
+  async validateTicket(ticketId: string) {
+    const ticket = await this.ticketsService.findByTicketId(ticketId);
+    if (!ticket) return { ok: false, message: 'Không tìm thấy vé' };
+    if (ticket.status !== 'unused') return { ok: false, message: 'Vé đã sử dụng hoặc không hợp lệ' };
+    return { ok: true, ticket: {
+      id: ticket.ticketId,
+      bookingId: ticket.bookingId,
+      passengerName: ticket.passengerName,
+      seat: ticket.seat,
+      tripId: ticket.tripId,
+      status: ticket.status,
+      extras: ticket.extras
+    }};
+  }
+
+  async confirmTicket(ticketId: string) {
+    const ticket = await this.ticketsService.findByTicketId(ticketId);
+    if (!ticket) return { ok: false, message: 'Không tìm thấy vé' };
+    if (ticket.status !== 'unused') return { ok: false, message: 'Vé không thể xác nhận' };
+    const confirmed = await this.ticketsService.confirmTicket(ticketId);
+    return { ok: true, message: 'Ticket confirmed', ticket: { id: confirmed.ticketId, status: confirmed.status } };
+  }
+}
+DS
+
+cat > src/drivers/drivers.controller.ts <<'DC'
+import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { DriversService } from './drivers.service';
+import { ValidateTicketDto } from './dto/validate-ticket.dto';
+import { ConfirmTicketDto } from './dto/confirm-ticket.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../common/roles.decorator';
+import { RolesGuard } from '../common/roles.guard';
+
+@Controller('drivers')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class DriversController {
+  constructor(private driversService: DriversService) {}
+
+  @Post('validate')
+  @Roles('driver')
+  async validate(@Body() dto: ValidateTicketDto) {
+    return this.driversService.validateTicket(dto.ticketId);
+  }
+
+  @Post('confirm-ticket')
+  @Roles('driver')
+  async confirm(@Body() dto: ConfirmTicketDto) {
+    return this.driversService.confirmTicket(dto.ticketId);
+  }
+}
+DC
+
+cat > src/drivers/drivers.module.ts <<'DM'
+import { Module } from '@nestjs/common';
+import { DriversService } from './drivers.service';
+import { DriversController } from './drivers.controller';
+import { TicketsModule } from '../tickets/tickets.module';
+import { RolesGuard } from '../common/roles.guard';
+
+@Module({
+  imports: [TicketsModule],
+  providers: [DriversService, RolesGuard],
+  controllers: [DriversController],
+})
+export class DriversModule {}
+DM
+
+#
+# DONE creating files
+#
+
+echo "All files created. Installing npm dependencies (this may take a while)..."
+
+# install deps
 npm install
-npm run start:dev
 
-Server will run at http://localhost:3000
-API prefix: /api
+echo "Installation finished."
 
-Demo user created automatically if no users:
-email: user@example.com
-password: password123
-EOF
+cat <<'USAGE'
 
-chmod +x "$BACKEND_DIR/create_backend_nest.sh" || true
+Backend scaffold created in ./backend
 
-echo "Created backend scaffold under $BACKEND_DIR"
-echo "Next steps:"
-echo "1) cd backend && npm install"
-echo "2) npm run start:dev"
-echo ""
+Next steps (from project root):
+1. Start Mongo (docker compose):
+   cd backend
+   docker compose up -d
+
+   or run a local Mongo and update MONGO_URI in .env
+
+2. Create .env in backend/ (or copy .env.example)
+   cp .env.example .env
+   # Edit .env to set a strong JWT_SECRET if needed
+
+3. Run dev server:
+   npm run start:dev
+
+4. Seed sample data (driver + tickets):
+   npm run seed
+
+Example:
+  cd backend
+  cp .env.example .env
+  docker compose up -d
+  npm run start:dev
+  # in another shell:
+  npm run seed
+
+Endpoints:
+- POST /auth/register  { name, email, password, role? }
+- POST /auth/login     { email, password } -> { accessToken }
+- POST /drivers/validate  (Bearer token of driver) { ticketId }
+- POST /drivers/confirm-ticket (Bearer token of driver) { ticketId }
+
+If you want, I can:
+- Push this backend into your repository under folder `backend/` (create a branch & PR),
+- Or adjust endpoints/schemas to match FE exactly (names/fields/response shapes).
+
+USAGE
+
+echo "Done."
