@@ -148,6 +148,11 @@ export function UserProfile({ onBack }: UserProfileProps) {
           </div>
         </div>
 
+
+
+
+        
+
         {/* Statistics */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
