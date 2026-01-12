@@ -90,6 +90,15 @@ const ProfileScreen = () => {
           <View style={styles.menuSection}>
             <TouchableOpacity
               style={styles.menuItem}
+              onPress={() => navigation.navigate("Drive" as never)}
+            >
+              <Ionicons name="cloud-outline" size={24} color="#666" />
+              <Text style={styles.menuText}>My Drive</Text>
+              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.menuItem}
               onPress={handleNavigateToChangePassword}
             >
               <Ionicons name="person-outline" size={24} color="#666" />

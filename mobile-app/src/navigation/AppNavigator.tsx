@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/index-store";
 
@@ -19,6 +19,7 @@ import {
   ProfileScreen,
   LoyaltyProgramScreen,
   BusTrackingScreen,
+  DriveScreen,
 } from "../screens/index-screen";
 
 // Navigation
@@ -33,6 +34,7 @@ type AuthStackParamList = {
 
 type MainStackParamList = {
   MainTabs: undefined;
+  Drive: undefined;
   SearchTrips: undefined;
   TripDetails: { trip: any };
   Booking: { trip: any };
@@ -49,9 +51,9 @@ type RootStackParamList = {
   Auth: undefined;
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
-const AuthStack = createStackNavigator<AuthStackParamList>();
-const MainStack = createStackNavigator<MainStackParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 const AuthStackNavigator = () => (
   <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -74,6 +76,7 @@ const MainStackNavigator = () => (
     <MainStack.Screen name="MyBookings" component={MyBookingsScreen} />
     <MainStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
     <MainStack.Screen name="Profile" component={ProfileScreen} />
+    <MainStack.Screen name="Drive" component={DriveScreen} />
     <MainStack.Screen name="LoyaltyProgram" component={LoyaltyProgramScreen} />
     <MainStack.Screen name="BusTracking" component={BusTrackingScreen} />
   </MainStack.Navigator>
