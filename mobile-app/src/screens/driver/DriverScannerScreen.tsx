@@ -7,11 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import * as CameraModule from "expo-camera";
-import { useCameraPermissions } from "expo-camera";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import apiService from "../../services/common/apiService";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/index-store";
@@ -32,26 +30,73 @@ type ValidateResponse = {
   ok?: boolean;
 };
 
-// Resolve runtime Camera component (file scope)
-const ExpoCamera: React.ComponentType<any> | null =
-  ((CameraModule as any).Camera || (CameraModule as any).default || null);
+// Try to get the official hook; fallback if it's nested on default
+const useCameraPermissionsHook =
+  (CameraModule as any).useCameraPermissions ||
+  (CameraModule as any).default?.useCameraPermissions;
+
+// Resolve runtime camera component:
+// prefer CameraView (appears in your logs), then Camera, then default export
+const cameraCandidate =
+  (CameraModule as any).CameraView ||
+  (CameraModule as any).Camera ||
+  (CameraModule as any).default ||
+  null;
+
+// If candidate is an object with `.default`, prefer that (common interop)
+const getRuntimeCamera = (c: any) => {
+  if (!c) return null;
+  if (typeof c === "function") return c;
+  if (c && typeof c === "object" && typeof c.default === "function") return c.default;
+  // if it's an object that itself is a forwardRef/component-like, return it
+  return c;
+};
 
 export default function DriverScannerScreen({ navigation }: any) {
-  // Use the official hook for permissions
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  // Hook for permissions (useCameraPermissions may be undefined in some builds)
+  const permsHook = useCameraPermissionsHook as any;
+  const [cameraPermission, requestCameraPermission] = permsHook
+    ? permsHook()
+    : // fallback pair: undefined permission + request wrapper
+      ([undefined, async () => {
+        // try to use legacy async helper if available
+        if ((CameraModule as any).requestCameraPermissionsAsync) {
+          try {
+            const res = await (CameraModule as any).requestCameraPermissionsAsync();
+            return res;
+          } catch (e) {
+            return undefined;
+          }
+        }
+        return undefined;
+      }] as any);
 
-  // Local simple states
+  // Local states
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState<TicketInfo | null>(null);
   const auth = useSelector((s: RootState) => s.auth);
 
-  // If permission value is null/undefined, show requesting UI while we call request
+  // Resolve camera component at runtime and cast to any for JSX
+  const CameraRuntime = getRuntimeCamera(cameraCandidate) as any;
+
+  // Debug runtime shapes (keep these to inspect Metro console)
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("DEBUG CameraModule keys:", Object.keys(CameraModule || {}));
+    // eslint-disable-next-line no-console
+    console.log("DEBUG cameraCandidate:", cameraCandidate);
+    // eslint-disable-next-line no-console
+    console.log("DEBUG CameraRuntime (type):", typeof CameraRuntime, CameraRuntime);
+    // eslint-disable-next-line no-console
+    console.log("DEBUG Ionicons:", Ionicons);
+  }, []);
+
+  // request permission on mount if needed
   useEffect(() => {
     (async () => {
       try {
-        // If already asked before, cameraPermission is not null; otherwise request
-        if (!cameraPermission) {
+        if (!cameraPermission && requestCameraPermission) {
           await requestCameraPermission();
         }
       } catch (e) {
@@ -60,7 +105,6 @@ export default function DriverScannerScreen({ navigation }: any) {
     })();
   }, [cameraPermission, requestCameraPermission]);
 
-  // Helper to know granted status
   const permissionGranted = cameraPermission?.granted ?? false;
   const permissionUndetermined = cameraPermission == null;
 
@@ -108,7 +152,6 @@ export default function DriverScannerScreen({ navigation }: any) {
     if (scanned) return;
     setScanned(true);
 
-    // QR payload could be JSON or plain id
     let ticketId = data;
     try {
       const parsed = JSON.parse(data);
@@ -155,7 +198,7 @@ export default function DriverScannerScreen({ navigation }: any) {
     }
   };
 
-  // Permission UI handling
+  // Permission UI
   if (permissionUndetermined) {
     return (
       <View style={styles.center}>
@@ -170,7 +213,7 @@ export default function DriverScannerScreen({ navigation }: any) {
         <Text>Không có quyền camera. Vui lòng cấp quyền trong cài đặt.</Text>
         <TouchableOpacity
           style={[styles.button, { marginTop: 12 }]}
-          onPress={() => requestCameraPermission()}
+          onPress={() => requestCameraPermission && requestCameraPermission()}
         >
           <Text style={styles.buttonText}>Yêu cầu quyền</Text>
         </TouchableOpacity>
@@ -183,9 +226,10 @@ export default function DriverScannerScreen({ navigation }: any) {
       {!ticket ? (
         <>
           <View style={styles.scannerContainer}>
-            {/* If ExpoCamera is available at runtime, render it. Otherwise show fallback message */}
-            {ExpoCamera ? (
-              <ExpoCamera
+            {/* Render the runtime camera component if available */}
+            {CameraRuntime ? (
+              // CameraRuntime is any — it can be CameraView or Camera. We pass onBarCodeScanned.
+              <CameraRuntime
                 style={StyleSheet.absoluteFillObject}
                 onBarCodeScanned={scanned ? undefined : onBarCodeScanned}
                 ratio="16:9"
