@@ -12,4 +12,21 @@ export declare class UsersService {
     findById(id: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
+    listUsers(): Promise<(import("mongoose").FlattenMaps<UserDocument> & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
+    updateRoles(userId: string, roles: string[]): Promise<any>;
+    changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{
+        ok: boolean;
+        message: string;
+    } | {
+        ok: boolean;
+        message?: undefined;
+    }>;
+    updateProfile(userId: string, data: Partial<User>): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    updatePasswordById(userId: string, newPassword: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & User & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
 }

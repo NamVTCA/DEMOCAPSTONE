@@ -34,6 +34,50 @@ let UsersService = class UsersService {
     async findById(id) {
         return this.userModel.findById(id).exec();
     }
+    async listUsers() {
+        return this.userModel.find().select('-password').lean().exec();
+    }
+    async updateRoles(userId, roles) {
+        const u = await this.findById(userId);
+        if (!u)
+            return null;
+        u.roles = roles;
+        await u.save();
+        const { password, ...rest } = u.toObject();
+        return rest;
+    }
+    async changePassword(userId, currentPassword, newPassword) {
+        const user = await this.findById(userId);
+        if (!user)
+            return { ok: false, message: 'User not found' };
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (!match)
+            return { ok: false, message: 'Current password incorrect' };
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+        return { ok: true };
+    }
+    async updateProfile(userId, data) {
+        const user = await this.findById(userId);
+        if (!user)
+            return null;
+        const allowed = ['name', 'email', 'extras', 'phone'];
+        allowed.forEach((k) => {
+            if (data[k] !== undefined)
+                user[k] = data[k];
+        });
+        await user.save();
+        return user;
+    }
+    async updatePasswordById(userId, newPassword) {
+        const user = await this.findById(userId);
+        if (!user)
+            return null;
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        return user.save();
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

@@ -5,6 +5,8 @@ import { UsersModule } from './users/users.module';
 import { DriversModule } from './drivers/drivers.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { HealthController } from './health/health.controller';
+import { CompanyModule } from './company/company.module';
+import { AdminModule } from './admin/admin.module';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,6 +18,8 @@ dotenv.config();
     UsersModule,
     DriversModule,
     TicketsModule,
+    CompanyModule,
+    AdminModule,
   ],
   controllers: [HealthController]
 })

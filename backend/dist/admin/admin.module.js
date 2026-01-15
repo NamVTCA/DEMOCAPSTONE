@@ -6,21 +6,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersModule = void 0;
+exports.AdminModule = void 0;
 const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
-const user_schema_1 = require("./schemas/user.schema");
-const users_service_1 = require("./users.service");
-const users_controller_1 = require("./users.controller");
-let UsersModule = class UsersModule {
+const admin_controller_1 = require("./admin.controller");
+const admin_service_1 = require("./admin.service");
+const users_module_1 = require("../users/users.module");
+const company_module_1 = require("../company/company.module");
+const tickets_module_1 = require("../tickets/tickets.module");
+let AdminModule = class AdminModule {
 };
-exports.UsersModule = UsersModule;
-exports.UsersModule = UsersModule = __decorate([
+exports.AdminModule = AdminModule;
+exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: user_schema_1.User.name, schema: user_schema_1.UserSchema }])],
-        providers: [users_service_1.UsersService],
-        exports: [users_service_1.UsersService],
-        controllers: [users_controller_1.UsersController],
+        imports: [users_module_1.UsersModule, company_module_1.CompanyModule, tickets_module_1.TicketsModule],
+        controllers: [admin_controller_1.AdminController],
+        providers: [admin_service_1.AdminService],
     })
-], UsersModule);
-//# sourceMappingURL=users.module.js.map
+], AdminModule);
+//# sourceMappingURL=admin.module.js.map

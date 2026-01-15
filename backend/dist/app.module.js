@@ -14,6 +14,8 @@ const users_module_1 = require("./users/users.module");
 const drivers_module_1 = require("./drivers/drivers.module");
 const tickets_module_1 = require("./tickets/tickets.module");
 const health_controller_1 = require("./health/health.controller");
+const company_module_1 = require("./company/company.module");
+const admin_module_1 = require("./admin/admin.module");
 const dotenv = require("dotenv");
 dotenv.config();
 let AppModule = class AppModule {
@@ -27,6 +29,8 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             drivers_module_1.DriversModule,
             tickets_module_1.TicketsModule,
+            company_module_1.CompanyModule,
+            admin_module_1.AdminModule,
         ],
         controllers: [health_controller_1.HealthController]
     })
