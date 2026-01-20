@@ -62,7 +62,7 @@ let UsersService = class UsersService {
         const user = await this.findById(userId);
         if (!user)
             return null;
-        const allowed = ['name', 'email', 'extras', 'phone'];
+        const allowed = ['name', 'email', 'extras', 'phone', "avatar"];
         allowed.forEach((k) => {
             if (data[k] !== undefined)
                 user[k] = data[k];

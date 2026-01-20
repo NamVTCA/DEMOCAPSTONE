@@ -51,7 +51,7 @@ export class UsersService {
     const user = await this.findById(userId);
     if (!user) return null;
     // Only allow certain fields
-    const allowed = ['name', 'email', 'extras', 'phone'];
+    const allowed = ['name', 'email', 'extras', 'phone', "avatar"];
     allowed.forEach((k) => {
       if ((data as any)[k] !== undefined) (user as any)[k] = (data as any)[k];
     });

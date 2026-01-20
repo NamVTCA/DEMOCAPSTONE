@@ -20,6 +20,19 @@ const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const roles_decorator_1 = require("../common/roles.decorator");
 const roles_guard_1 = require("../common/roles.guard");
 const express_1 = require("express");
+const storage = diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = join(__dirname, '..', '..', 'uploads');
+        if (!fs.existsSync(uploadPath))
+            fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        const rand = Date.now();
+        const name = `${rand}-${file.originalname.replace(/\s+/g, '-')}`;
+        cb(null, name);
+    }
+});
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
