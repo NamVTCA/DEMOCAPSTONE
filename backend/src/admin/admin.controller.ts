@@ -1,3 +1,4 @@
+// backend/src/admin/admin.controller.ts
 import { Controller, UseGuards, Get, Body, Put, Param } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -18,6 +19,12 @@ export class AdminController {
   @Get('companies')
   async companies() {
     return this.adminService.listCompanies();
+  }
+
+  // NEW: Dashboard endpoint
+  @Get('dashboard')
+  async dashboard() {
+    return this.adminService.getDashboardStats();
   }
 
   @Put('users/:id/roles')

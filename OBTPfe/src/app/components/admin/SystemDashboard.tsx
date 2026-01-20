@@ -1,19 +1,96 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, Users, Bus, DollarSign, TrendingUp, AlertCircle, CheckCircle, XCircle, FileText, Plus } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import { adminService } from '../../../services/adminService';
 
 export function SystemDashboard() {
   const { t } = useLanguage();
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
 
-  const stats = [
-    { label: t('totalCompaniesStats'), value: '156', icon: Building2, color: 'from-blue-500 to-blue-600', change: '+12' },
-    { label: t('usersStats'), value: '48,523', icon: Users, color: 'from-green-500 to-green-600', change: '+1,234' },
-    { label: t('totalVehiclesStats'), value: '3,847', icon: Bus, color: 'from-purple-500 to-purple-600', change: '+89' },
-    { label: t('monthlyRevenueStats'), value: '12.5B', icon: DollarSign, color: 'from-orange-500 to-orange-600', change: '+15%' }
-  ];
+  // Data from API
+  const [statsData, setStatsData] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const d = await adminService.getDashboardStats();
+        if (mounted) setStatsData(d);
+      } catch (err: any) {
+        console.error('Failed to load dashboard stats', err);
+        if (mounted) {
+          setError('Không thể tải thống kê'); // simple VN message; FE uses t() if you want localization
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Helper to format currency nicely (fallback to localized format)
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined || amount === null) return '-';
+    // If very large, show short form like 12.5B
+    if (Math.abs(amount) >= 1e9) {
+      const v = (amount / 1e9);
+      // show one decimal if needed
+      return `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}B`;
+    }
+    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+  };
+
+  // Build stats array used by the UI
+  const stats = statsData
+    ? [
+        {
+          label: t('totalCompaniesStats'),
+          value: String(statsData.totalCompanies ?? '-'),
+          icon: Building2,
+          color: 'from-blue-500 to-blue-600',
+          change: '', // change data not provided by API for now
+        },
+        {
+          label: t('usersStats'),
+          value: String(statsData.totalUsers ?? '-'),
+          icon: Users,
+          color: 'from-green-500 to-green-600',
+          change: '',
+        },
+        {
+          label: t('totalVehiclesStats'),
+          // using totalTrips as analog of "vehicles/trips" shown previously
+          value: String(statsData.totalTrips ?? '-'),
+          icon: Bus,
+          color: 'from-purple-500 to-purple-600',
+          change: '',
+        },
+        {
+          label: t('monthlyRevenueStats'),
+          // display formatted currency or short form
+          value: formatCurrency(statsData.totalRevenue ?? 0),
+          icon: DollarSign,
+          color: 'from-orange-500 to-orange-600',
+          change: '',
+        },
+      ]
+    : [
+        // fallback mock while loading or if error
+        { label: t('totalCompaniesStats'), value: '156', icon: Building2, color: 'from-blue-500 to-blue-600', change: '+12' },
+        { label: t('usersStats'), value: '48,523', icon: Users, color: 'from-green-500 to-green-600', change: '+1,234' },
+        { label: t('totalVehiclesStats'), value: '3,847', icon: Bus, color: 'from-purple-500 to-purple-600', change: '+89' },
+        { label: t('monthlyRevenueStats'), value: '12.5B', icon: DollarSign, color: 'from-orange-500 to-orange-600', change: '+15%' }
+      ];
+
+  // Keep companies mock for now (can be replaced by API later)
   const companies = [
     { id: '1', name: 'Phương Trang', vehicles: 145, trips: 523, revenue: '2.1B', status: 'active', rating: 4.8 },
     { id: '2', name: 'Thành Bưởi', vehicles: 98, trips: 412, revenue: '1.8B', status: 'active', rating: 4.6 },
@@ -39,7 +116,7 @@ export function SystemDashboard() {
               <p className="text-gray-600 dark:text-gray-400">{t('systemAdminLabel')}</p>
             </div>
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={() => setShowReportModal(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-xl hover:shadow-lg transition-all"
               >
@@ -52,19 +129,32 @@ export function SystemDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* optional error / loading indicator */}
+        {error && (
+          <div className="mb-4 text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
+            const changeBadge = stat.change && stat.change.length > 0 ? (
+              <span className="text-green-600 dark:text-green-400 text-sm">{stat.change}</span>
+            ) : null;
+
             return (
               <div key={index} className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                   <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-2xl flex items-center justify-center`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-green-600 dark:text-green-400 text-sm">{stat.change}</span>
+                  {changeBadge}
                 </div>
-                <div className="text-3xl text-gray-900 dark:text-white mb-1">{stat.value}</div>
+                <div className="text-3xl text-gray-900 dark:text-white mb-1">
+                  {loading && !statsData ? '...' : stat.value}
+                </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
               </div>
             );
@@ -82,6 +172,7 @@ export function SystemDashboard() {
             </div>
           </div>
           <div className="h-64 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-2xl flex items-center justify-center">
+            {/* could replace with a chart component later */}
             <TrendingUp className="w-16 h-16 text-gray-400" />
           </div>
         </div>
@@ -96,7 +187,7 @@ export function SystemDashboard() {
                 placeholder={t('search')}
                 className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
               />
-              <button 
+              <button
                 onClick={() => setShowAddCompanyModal(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all text-sm"
               >
