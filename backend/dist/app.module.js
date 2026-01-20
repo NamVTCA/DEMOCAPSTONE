@@ -16,6 +16,8 @@ const tickets_module_1 = require("./tickets/tickets.module");
 const health_controller_1 = require("./health/health.controller");
 const company_module_1 = require("./company/company.module");
 const admin_module_1 = require("./admin/admin.module");
+const trips_module_1 = require("./trips/trips.module");
+const bookings_module_1 = require("./bookings/bookings.module");
 const dotenv = require("dotenv");
 dotenv.config();
 let AppModule = class AppModule {
@@ -31,6 +33,8 @@ exports.AppModule = AppModule = __decorate([
             tickets_module_1.TicketsModule,
             company_module_1.CompanyModule,
             admin_module_1.AdminModule,
+            trips_module_1.TripsModule,
+            bookings_module_1.BookingsModule,
         ],
         controllers: [health_controller_1.HealthController]
     })

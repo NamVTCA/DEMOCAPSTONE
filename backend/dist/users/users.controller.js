@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b;
+var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
@@ -40,6 +40,40 @@ let UsersController = class UsersController {
         const { password, ...rest } = updated.toObject();
         return rest;
     }
+    async profile(req) {
+        const payload = req.user;
+        const id = payload.userId || payload.sub;
+        const u = await this.usersService.findById(id);
+        if (!u)
+            return null;
+        const { password, ...rest } = u.toObject();
+        return rest;
+    }
+    async updateProfile(req, body) {
+        const payload = req.user;
+        const id = payload.userId || payload.sub;
+        const updated = await this.usersService.updateProfile(id, body);
+        const { password, ...rest } = updated.toObject();
+        return rest;
+    }
+    async uploadAvatar(req, body) {
+        const payload = req.user;
+        const id = payload.userId || payload.sub;
+        if (!body || !body.avatar) {
+            return { ok: false, message: 'avatar field required' };
+        }
+        const updated = await this.usersService.updateProfile(id, { avatar: body.avatar });
+        const { password, ...rest } = updated.toObject();
+        return rest;
+    }
+    async changePassword(req, body) {
+        const payload = req.user;
+        const id = payload.userId || payload.sub;
+        if (!body?.currentPassword || !body?.newPassword) {
+            return { ok: false, message: 'currentPassword and newPassword are required' };
+        }
+        return this.usersService.changePassword(id, body.currentPassword, body.newPassword);
+    }
     async listAll() {
         return this.usersService.listUsers();
     }
@@ -65,6 +99,41 @@ __decorate([
     __metadata("design:paramtypes", [typeof (_b = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _b : Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateMe", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('profile'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_c = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _c : Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "profile", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('profile'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_d = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _d : Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('avatar'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _e : Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "uploadAvatar", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('change-password'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_f = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _f : Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "changePassword", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('system-admin', 'company-admin'),
