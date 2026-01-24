@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/OnlineBusTicketPlatform
+      - JWT_SECRET=3h1Rim5pdpTMmpN+HzooZWoC5qA/xwWWSXmt8xoA4mZQeVL8dbtTaGwWX/ER9lJR
+      - APP_BASE_URL=http://localhost:3000
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./OBTPfe
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  mongo-data:

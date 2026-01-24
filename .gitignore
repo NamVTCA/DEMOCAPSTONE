@@ -1,0 +1,17 @@
+# .gitignore (project root)
+# Node
+node_modules/
+# backend build / runtime
+/backend/dist/
+/backend/node_modules/
+/backend/uploads/
+/backend/.env
+# frontend build / runtime
+/OBTPfe/dist/
+/OBTPfe/node_modules/
+/OBTPfe/.env
+# misc
+.DS_Store
+.vscode/
+.idea/
+npm-debug.log*
