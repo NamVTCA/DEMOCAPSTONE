@@ -21,4 +21,7 @@ export declare class BookingsService {
     findById(id: string): Promise<import("mongoose").FlattenMaps<BookingDocument> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
+    countAll(): Promise<number>;
+    countPending(): Promise<number>;
+    sumRevenue(): Promise<number>;
 }

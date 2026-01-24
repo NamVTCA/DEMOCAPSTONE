@@ -1,16 +1,15 @@
 import { UsersService } from './users.service';
-import { Request } from 'express';
 export declare class UsersController {
     private usersService;
     constructor(usersService: UsersService);
-    me(req: Request): Promise<any>;
-    updateMe(req: Request, body: any): Promise<any>;
-    profile(req: Request): Promise<any>;
-    updateProfile(req: Request, body: any): Promise<any>;
-    uploadAvatar(req: Request, body: {
-        avatar: string;
-    }): Promise<any>;
-    changePassword(req: Request, body: {
+    me(req: any): Promise<any>;
+    updateMe(req: any, body: any): Promise<any>;
+    profile(req: any): Promise<any>;
+    updateProfile(req: any, body: any): Promise<any>;
+    uploadAvatar(req: any, file: Express.Multer.File): Promise<{
+        avatarUrl: string;
+    }>;
+    changePassword(req: any, body: {
         currentPassword: string;
         newPassword: string;
     }): Promise<{

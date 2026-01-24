@@ -20,6 +20,7 @@ exports.BookingsModule = BookingsModule = __decorate([
         imports: [mongoose_1.MongooseModule.forFeature([{ name: booking_schema_1.Booking.name, schema: booking_schema_1.BookingSchema }])],
         providers: [bookings_service_1.BookingsService],
         controllers: [bookings_controller_1.BookingsController],
+        exports: [bookings_service_1.BookingsService],
     })
 ], BookingsModule);
 //# sourceMappingURL=bookings.module.js.map

@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
@@ -19,10 +18,13 @@ const users_service_1 = require("./users.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const roles_decorator_1 = require("../common/roles.decorator");
 const roles_guard_1 = require("../common/roles.guard");
-const express_1 = require("express");
-const storage = diskStorage({
+const multer_1 = require("multer");
+const path_1 = require("path");
+const fs = require("fs");
+const platform_express_1 = require("@nestjs/platform-express");
+const storage = (0, multer_1.diskStorage)({
     destination: (req, file, cb) => {
-        const uploadPath = join(__dirname, '..', '..', 'uploads');
+        const uploadPath = (0, path_1.join)(__dirname, '..', '..', 'uploads');
         if (!fs.existsSync(uploadPath))
             fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
@@ -69,15 +71,16 @@ let UsersController = class UsersController {
         const { password, ...rest } = updated.toObject();
         return rest;
     }
-    async uploadAvatar(req, body) {
+    async uploadAvatar(req, file) {
+        if (!file) {
+            throw new common_1.HttpException('No file uploaded', common_1.HttpStatus.BAD_REQUEST);
+        }
         const payload = req.user;
         const id = payload.userId || payload.sub;
-        if (!body || !body.avatar) {
-            return { ok: false, message: 'avatar field required' };
-        }
-        const updated = await this.usersService.updateProfile(id, { avatar: body.avatar });
-        const { password, ...rest } = updated.toObject();
-        return rest;
+        const base = (process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`);
+        const avatarUrl = `${base}/uploads/${file.filename}`;
+        const updated = await this.usersService.updateProfile(id, { avatar: avatarUrl });
+        return { avatarUrl };
     }
     async changePassword(req, body) {
         const payload = req.user;
@@ -100,7 +103,7 @@ __decorate([
     (0, common_1.Get)('me'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_a = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _a : Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "me", null);
 __decorate([
@@ -109,7 +112,7 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_b = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _b : Object, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateMe", null);
 __decorate([
@@ -117,7 +120,7 @@ __decorate([
     (0, common_1.Get)('profile'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_c = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _c : Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "profile", null);
 __decorate([
@@ -126,25 +129,26 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_d = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _d : Object, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('avatar'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('avatar', { storage })),
     __param(0, (0, common_1.Req)()),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_e = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _e : Object, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "uploadAvatar", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Post)('change-password'),
+    (0, common_1.Put)('change-password'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_f = typeof express_1.Request !== "undefined" && express_1.Request) === "function" ? _f : Object, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "changePassword", null);
 __decorate([

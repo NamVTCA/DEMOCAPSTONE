@@ -13,12 +13,14 @@ const admin_service_1 = require("./admin.service");
 const users_module_1 = require("../users/users.module");
 const company_module_1 = require("../company/company.module");
 const tickets_module_1 = require("../tickets/tickets.module");
+const bookings_module_1 = require("../bookings/bookings.module");
+const trips_module_1 = require("../trips/trips.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
-        imports: [users_module_1.UsersModule, company_module_1.CompanyModule, tickets_module_1.TicketsModule],
+        imports: [users_module_1.UsersModule, company_module_1.CompanyModule, tickets_module_1.TicketsModule, bookings_module_1.BookingsModule, trips_module_1.TripsModule],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],
     })

@@ -8,6 +8,15 @@ export declare class AdminController {
     companies(): Promise<(import("mongoose").FlattenMaps<import("../company/schemas/company.schema").CompanyDocument> & {
         _id: import("mongoose").Types.ObjectId;
     })[]>;
+    dashboard(): Promise<{
+        totalUsers: number;
+        totalCompanies: number;
+        totalTrips: number;
+        totalBookings: number;
+        totalRevenue: number;
+        activeUsers: number;
+        pendingBookings: number;
+    }>;
     updateRoles(id: string, body: {
         roles: string[];
     }): Promise<any>;

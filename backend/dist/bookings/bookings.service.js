@@ -51,6 +51,19 @@ let BookingsService = class BookingsService {
     async findById(id) {
         return this.bookingModel.findById(id).lean().exec();
     }
+    async countAll() {
+        return this.bookingModel.countDocuments().exec();
+    }
+    async countPending() {
+        return this.bookingModel.countDocuments({ status: 'held' }).exec();
+    }
+    async sumRevenue() {
+        const res = await this.bookingModel.aggregate([
+            { $match: { status: { $in: ['paid', 'confirmed'] } } },
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+        ]).exec();
+        return (res[0] && res[0].total) ? res[0].total : 0;
+    }
 };
 exports.BookingsService = BookingsService;
 exports.BookingsService = BookingsService = __decorate([

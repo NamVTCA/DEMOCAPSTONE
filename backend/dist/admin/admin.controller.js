@@ -28,6 +28,9 @@ let AdminController = class AdminController {
     async companies() {
         return this.adminService.listCompanies();
     }
+    async dashboard() {
+        return this.adminService.getDashboardStats();
+    }
     async updateRoles(id, body) {
         return this.adminService.setUserRoles(id, body.roles);
     }
@@ -45,6 +48,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "companies", null);
+__decorate([
+    (0, common_1.Get)('dashboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "dashboard", null);
 __decorate([
     (0, common_1.Put)('users/:id/roles'),
     __param(0, (0, common_1.Param)('id')),
