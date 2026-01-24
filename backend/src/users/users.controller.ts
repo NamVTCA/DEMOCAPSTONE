@@ -4,7 +4,6 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
-import { Request } from 'express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs';
@@ -30,7 +29,7 @@ export class UsersController {
   // Existing APIs kept
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@Req() req: Request) {
+  async me(@Req() req: any) {
     const payload: any = req.user;
     const id = payload.userId || payload.sub;
     const u = await this.usersService.findById(id);
@@ -41,7 +40,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('me')
-  async updateMe(@Req() req: Request, @Body() body: any) {
+  async updateMe(@Req() req: any, @Body() body: any) {
     const payload: any = req.user;
     const id = payload.userId || payload.sub;
     const updated = await this.usersService.updateProfile(id, body);
@@ -52,7 +51,7 @@ export class UsersController {
   // ---------- New: support mobile-app (/users/profile) as alias to /users/me ----------
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  async profile(@Req() req: Request) {
+  async profile(@Req() req: any) {
     // same as /me
     const payload: any = req.user;
     const id = payload.userId || payload.sub;
@@ -64,7 +63,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
-  async updateProfile(@Req() req: Request, @Body() body: any) {
+  async updateProfile(@Req() req: any, @Body() body: any) {
     const payload: any = req.user;
     const id = payload.userId || payload.sub;
     const updated = await this.usersService.updateProfile(id, body);
@@ -76,11 +75,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Post('avatar')
   @UseInterceptors(FileInterceptor('avatar', { storage }))
-  async uploadAvatar(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
+  async uploadAvatar(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
     }
-    const payload: any = (req as any).user;
+    const payload: any = req.user;
     const id = payload.userId || payload.sub;
     // build public URL, prefer env APP_BASE_URL
     const base = (process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`);
@@ -95,7 +94,7 @@ export class UsersController {
   // change-password: body { currentPassword, newPassword }
   @UseGuards(JwtAuthGuard)
   @Put('change-password')
-  async changePassword(@Req() req: Request, @Body() body: { currentPassword: string; newPassword: string }) {
+  async changePassword(@Req() req: any, @Body() body: { currentPassword: string; newPassword: string }) {
     const payload: any = req.user;
     const id = payload.userId || payload.sub;
     if (!body?.currentPassword || !body?.newPassword) {
