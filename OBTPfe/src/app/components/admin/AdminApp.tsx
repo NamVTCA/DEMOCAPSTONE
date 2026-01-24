@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLogin } from "./AdminLogin";
 import { CompanyDashboard } from "./CompanyDashboard";
 import { SystemDashboard } from "./SystemDashboard";
@@ -74,22 +74,52 @@ export function AdminApp({
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
 
+  // Auto-login nếu trong localStorage đã có accessToken + user
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const userStr = localStorage.getItem('user');
+      if (token && userStr) {
+        const u = JSON.parse(userStr);
+        setAdminData({
+          name: u.name || u.email || '',
+          id: u._id || u.id || '',
+          email: u.email || ''
+        });
+        setIsLoggedIn(true);
+      }
+    } catch (e) {
+      // nếu parse lỗi thì bỏ qua (có thể là dữ liệu cũ/không hợp lệ)
+      console.warn('Failed to parse stored user:', e);
+    }
+  }, []);
+
   const handleLoginSuccess = (data: { name: string; id: string; email: string }) => {
     setAdminData(data);
     setIsLoggedIn(true);
   };
 
+  // Khi người dùng muốn quay lại phần khách (bỏ quyền admin)
   const handleBackToCustomer = () => {
+    // Xóa token + user khỏi localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+
     setIsLoggedIn(false);
+    setCurrentPage('dashboard');
     onLogout?.();
   };
 
   const handleLogout = () => {
+    // Xóa token + user khỏi localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+
     setIsLoggedIn(false);
     setCurrentPage('dashboard');
   };
 
-  // Show login screen if not logged in
+  // Show login screen nếu không logged in
   if (!isLoggedIn) {
     return (
       <AdminLogin

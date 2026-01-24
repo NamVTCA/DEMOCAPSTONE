@@ -16,4 +16,14 @@ export const adminService = {
     const res = await api.get<SystemStats>('/admin/dashboard');
     return res.data;
   },
+
+  async listUsers() {
+    const res = await api.get('/admin/users');
+    return res.data;
+  },
+
+  async listCompanies() {
+    const res = await api.get('/admin/companies');
+    return res.data;
+  },
 };
